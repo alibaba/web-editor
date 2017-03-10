@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Good</title>
+  <link rel="stylesheet" type="text/css" href="bower_components/jQuery-contextMenu/dist/jQuery.contextMenu.css">
+</head>
+<style>
+* {
+  margin: 0px;
+  padding: 0px;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  /*display: flex;*/
+}
+
+.finger {
+  position: absolute;
+  border-style: solid;
+  border-radius: 50%;
+  border-color: white;
+  border-width: 0mm;
+  width: 6mm;
+  height: 6mm;
+  top: -3mm;
+  left: -3mm;
+  opacity: 0.7;
+  pointer-events: none;
+  background: white;
+  /*#464646;*/
+  /*background: red;*/
+  display: none;
+}
+
+.finger.active {
+  display: block;
+  border-color: #464646;
+  border-width: 1mm;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#left {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+}
+
+#right {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  /*border: 1px solid red;*/
+  /*position: relative;*/
+}
+
+section {
+  /*border: 1px solid red;*/
+}
+
+#screen {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  background-color: gray;
+}
+
+#footer {
+  height: 50px;
+}
+
+.box {
+  position: relative;
+  display: flex;
+  flex: 1;
+}
+
+#editor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+#console {
+  height: 100px;
+  border: 1px solid green;
+  background-color: #eee;
+  overflow: auto;
+  word-break: break-all;
+  padding: 3px;
+}
+
+#upper {
+  width: 100%;
+  display: flex;
+  flex: 1;
+}
+
+#toolbar {
+  border: 1px solid green;
+}
+
+#gap {
+  width: 5px;
+  background-color: #444444;
+}
+
+#gap:hover {
+  cursor: col-resize;
+  background-color: black;
+}
+
+.canvas-fg {
+  z-index: 1;
+  position: absolute;
+}
+
+.canvas-bg {
+  z-index: 0;
+  position: absolute;
+}
+</style>
+
+<body>
+  <div id="app">
+    <div id="upper">
+      <div id="left">
+        <h1>{{message}}
+        </h1>
+        <div>
+          <button v-on:click="screenDumpUI()">Reload</button>
+          Short:
+          <input type="checkbox" v-model="codeShortFlag"> SN:
+          <input type="text" v-model="serial">
+        </div>
+        <section id="screen">
+          <canvas id="fgCanvas" class="canvas-fg" v-bind:style="canvasStyle"></canvas>
+          <canvas id="bgCanvas" class="canvas-bg" v-bind:style="canvasStyle"></canvas>
+          <span class="finger finger-0" style="transform: translate3d(200px, 100px, 0px)"></span>
+        </section>
+        <section id="footer">S22d</section>
+      </div>
+      <div id="gap"></div>
+      <div id="right">
+        <!-- <h1>Editor</h1> -->
+        <div id="toolbar">
+          <div>
+            <select v-model="fs.folder.current">
+              <option v-for="d in fs.folder.items" :value="d.path">
+                {{d.path}}
+              </option>
+            </select>
+            <select v-model="fs.fileSelected">
+              <option v-for="f in fs.files" :value="f.path">
+                {{f.name}}
+              </option>
+            </select>
+            <button>Open</button>
+            <span>{{fs.file.selected}}</span>
+          </div>
+          <div>
+            <button v-on:click="fileCreate()">New</button>
+            <button class="context-menu-one" style="background-color: #ccc">
+              {{fs.file.name}}
+              <span v-if="fs.file.changed">*</span>
+            </button>
+          </div>
+        </div>
+        <div class="box">
+          <div id="editor"></div>
+        </div>
+      </div>
+    </div>
+    <div id="console">{{console.content}}</div>
+  </div>
+</body>
+<script src="https://cdn.jsdelivr.net/g/vue@2.1.10,jquery@3.1.1"></script>
+<script src="ace/ace.js"></script>
+<script src="bower_components/jQuery-contextMenu/dist/jQuery.contextMenu.js"></script>
+<script src="http://localhost:8000/_d/js"></script>
+<script>
+</script>
+<script>
+window.LOCAL_URL = 'http://localhost:11230/';
+
+/* Image Pool */
+function ImagePool(size) {
+  this.size = size
+  this.images = []
+  this.counter = 0
+}
+
+ImagePool.prototype.next = function() {
+  if (this.images.length < this.size) {
+    var image = new Image()
+    this.images.push(image)
+    return image
+  } else {
+    if (this.counter >= this.size) {
+      // Reset for unlikely but theoretically possible overflow.
+      this.counter = 0
+    }
+  }
+
+  return this.images[this.counter++ % this.size]
+}
+
+function b64toBlob(b64Data, contentType, sliceSize) {
+  contentType = contentType || '';
+  sliceSize = sliceSize || 512;
+
+  var byteCharacters = atob(b64Data);
+  var byteArrays = [];
+
+  for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+    var slice = byteCharacters.slice(offset, offset + sliceSize);
+
+    var byteNumbers = new Array(slice.length);
+    for (var i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+
+    var byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+
+  return new Blob(byteArrays, {
+    type: contentType
+  });
+}
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    fs: {
+      folder: {
+        current: '/',
+        items: [{
+          path: '/',
+        }, {
+          path: '/images',
+        }]
+      },
+      file: {
+        name: '',
+        path: '',
+        sha: '',
+        changed: false,
+      },
+      fileSelected: '',
+      files: [{
+        name: 'hello.txt',
+        path: 'notes/hello.txt',
+      }, {
+        name: 'world.py',
+        path: 'notes/world.py'
+      }],
+    },
+    console: {
+      content: '',
+    },
+    editor: null,
+    nodeSelected: null,
+    nodes: [],
+    serial: 'default',
+    codeShortFlag: true, // generate short or long code
+    imagePool: null,
+    message: "WDA Remote Control",
+    canvas: {
+      bg: null,
+      fg: null,
+    },
+    canvasStyle: {
+      width: 'inherit',
+      height: 'inherit'
+    },
+    lastScreenSize: {
+      screen: {},
+      canvas: {}
+    },
+  },
+  created: function() {
+    $.getJSON(LOCAL_URL + 'api/v1/version')
+      .then(function(ret) {
+        console.log("version", ret.name);
+      })
+      .fail(function(ret) {
+        alert("Local server is not ready.")
+      })
+    this.imagePool = new ImagePool(100);
+  },
+  mounted: function() {
+    var URL = window.URL || window.webkitURL;
+    var currentSize = null;
+    var self = this;
+
+    this.canvas.bg = document.getElementById('bgCanvas')
+    this.canvas.fg = document.getElementById('fgCanvas')
+      // this.canvas = c;
+    window.c = this.canvas.bg;
+    var ctx = c.getContext('2d')
+
+    var editor = this.editor = ace.edit("editor");
+    editor.resize()
+    window.editor = editor;
+    this.initEditor(editor);
+    this.loadFile()
+      // this.screenRefresh()
+    this.screenDumpUI()
+
+    $(window).resize(function() {
+      self.resizeScreen();
+    })
+
+    this.loadLiveScreen();
+    this.activeMouseControl();
+  },
+  methods: {
+    loadCurrentFile: function() {
+      this.loadFile(this.fs.file.path)
+    },
+    initEditor: function(editor) {
+      var self = this;
+      editor.getSession().setMode("ace/mode/python");
+      editor.getSession().setUseSoftTabs(true);
+
+      editor.commands.addCommands([{
+        name: 'save',
+        bindKey: {
+          win: 'Ctrl-S',
+          mac: 'Command-S'
+        },
+        exec: function(editor) {
+          self.fileSave(self.fs.file);
+        },
+      }, {
+        name: 'build',
+        bindKey: {
+          win: 'Ctrl-B',
+          mac: 'Command-B'
+        },
+        exec: function(editor) {
+          self.console.content = 'build todo'
+        },
+      }, {
+        name: 'create',
+        bindKey: {
+          win: 'Alt-N',
+          mac: 'Alt-N'
+        },
+        exec: function(editor) {
+          self.fileCreate();
+        },
+      }]);
+
+      // editor.setReadOnly(true);
+      // editor.setHighlightActiveLine(false);
+
+      editor.$blockScrolling = Infinity;
+      editor.on('input', function(e) {
+        self.fs.file.changed = !self.editor.session.getUndoManager().isClean();
+        // self.editor.getValue() !== self.fs.file.content;
+        // self.editor.session.getUndoManager().isClean();
+      })
+
+      // FIXME(ssx): maybe websocket is better  
+      editor.on('focus', function() {
+        if (!self.fs.file.changed) {
+          self.loadCurrentFile();
+        }
+      })
+
+      // Auto save file
+      // setInterval(function() {
+      //   self.fileSave(self.fs.file)
+      // }, 1000)
+    },
+    loadFile: function(path) {
+      var self = this;
+      path = path || 'main.py';
+      return $.ajax({
+        method: 'GET',
+        url: LOCAL_URL + 'api/v1/contents/' + path,
+        success: function(ret) {
+          self.fs.file.name = ret.name;
+          self.fs.file.sha = ret.sha;
+          self.fs.file.path = ret.path;
+          self.fs.file.content = ret.content;
+          self.fs.file.changed = false;
+          self.editor.setValue(ret.content);
+          self.editor.clearSelection();
+          self.editor.getSession().setUndoManager(new ace.UndoManager())
+        }
+      }).then(function() {
+        this.editor.focus();
+      }.bind(this))
+    },
+    drawNode: function(node, color, dashed) {
+      if (!node) {
+        return;
+      }
+      var x = node.bounds[0],
+        y = node.bounds[1],
+        w = node.bounds[2] - x,
+        h = node.bounds[3] - y;
+      color = color || 'black';
+      var ctx = this.canvas.fg.getContext('2d');
+      var rectangle = new Path2D();
+      rectangle.rect(x, y, w, h);
+      if (dashed) {
+        ctx.lineWidth = 1;
+        ctx.setLineDash([8, 10]);
+      } else {
+        ctx.lineWidth = 5;
+        ctx.setLineDash([]);
+      }
+      ctx.strokeStyle = color;
+      ctx.stroke(rectangle);
+    },
+    fileSave: function(file) {
+      var self = this;
+      $.ajax({
+        method: 'PUT',
+        url: 'http://localhost:11230/api/v1/contents/' + file.path,
+        data: JSON.stringify({
+          content: self.editor.getValue(),
+          sha: file.sha,
+        }),
+        success: function(ret) {
+          self.editor.session.getUndoManager().markClean()
+          self.fs.file.changed = !editor.session.getUndoManager().isClean()
+          self.fs.file.sha = ret.content.sha;
+        },
+        error: function(ret) {
+          if (ret.status == 422) {
+            if (confirm("File has changed on disk, Do you want to reload it?")) {
+              self.loadCurrentFile();
+            }
+          }
+        }
+      })
+    },
+    fileCreate: function() {
+      var self = this;
+      var filename = window.prompt('Input file name?')
+      if (!filename) {
+        return;
+      }
+      $.ajax({
+          method: 'PUT',
+          url: LOCAL_URL + 'api/v1/contents/' + filename,
+          data: JSON.stringify({
+            content: '# coding: utf-8'
+          })
+        })
+        .then(function(ret) {
+          self.loadFile(ret.content.path);
+        })
+        .fail(function(ret) {
+          alert("File " + filename + " already exists");
+        })
+    },
+    resizeScreen: function(img) {
+      // check if need update
+      if (img) {
+        if (this.lastScreenSize.canvas.width == img.width &&
+          this.lastScreenSize.canvas.height == img.height) {
+          return;
+        }
+      } else {
+        img = this.lastScreenSize.canvas;
+        if (!img) {
+          return;
+        }
+      }
+      var screenDiv = document.getElementById('screen');
+      this.lastScreenSize = {
+        canvas: {
+          width: img.width,
+          height: img.height
+        },
+        screen: {
+          width: screenDiv.clientWidth,
+          height: screenDiv.clientHeight,
+        }
+      }
+      var canvasRatio = img.width / img.height;
+      var screenRatio = screenDiv.clientWidth / screenDiv.clientHeight;
+      if (canvasRatio > screenRatio) {
+        this.canvasStyle = {
+          width: Math.floor(screenDiv.clientWidth) + 'px', //'100%',
+          height: Math.floor(screenDiv.clientWidth / canvasRatio) + 'px', // 'inherit',
+        }
+      } else {
+        this.canvasStyle = {
+          width: Math.floor(screenDiv.clientHeight * canvasRatio) + 'px', //'inherit',
+          height: Math.floor(screenDiv.clientHeight) + 'px', //'100%',
+        }
+      }
+    },
+    screenDumpUI: function() {
+      var self = this;
+      this.screenRefresh()
+        .then(function() {
+          $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(self.serial) + '/uiview')
+            .then(function(ret) {
+              self.nodes = ret.nodes;
+            })
+        })
+    },
+    screenRefresh: function() {
+      return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.serial) + '/screenshot')
+        .then(function(ret) {
+          var blob = b64toBlob(ret.data, 'image/' + ret.type);
+          this.drawBlobImageToScreen(blob);
+        }.bind(this))
+    },
+    drawBlobImageToScreen: function(blob) {
+      // Support jQuery Promise
+      var dtd = $.Deferred();
+      var bgcanvas = this.canvas.bg,
+        fgcanvas = this.canvas.fg,
+        ctx = bgcanvas.getContext('2d'),
+        self = this,
+        URL = window.URL || window.webkitURL,
+        BLANK_IMG = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
+        img = this.imagePool.next();
+
+      img.onload = function() {
+        console.log("image")
+        fgcanvas.width = bgcanvas.width = img.width
+        fgcanvas.height = bgcanvas.height = img.height
+
+
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+        self.resizeScreen(img);
+
+        // Try to forcefully clean everything to get rid of memory
+        // leaks. Note self despite this effort, Chrome will still
+        // leak huge amounts of memory when the developer tools are
+        // open, probably to save the resources for inspection. When
+        // the developer tools are closed no memory is leaked.
+        img.onload = img.onerror = null
+        img.src = BLANK_IMG
+        img = null
+        blob = null
+
+        URL.revokeObjectURL(url)
+        url = null
+        dtd.resolve();
+      }
+
+      img.onerror = function() {
+        // Happily ignore. I suppose this shouldn't happen, but
+        // sometimes it does, presumably when we're loading images
+        // too quickly.
+
+        // Do the same cleanup here as in onload.
+        img.onload = img.onerror = null
+        img.src = BLANK_IMG
+        img = null
+        blob = null
+
+        URL.revokeObjectURL(url)
+        url = null
+        dtd.reject();
+      }
+      var url = URL.createObjectURL(blob)
+      img.src = url;
+      return dtd;
+    },
+    loadLiveScreen: function() {
+      var self = this;
+      var BLANK_IMG =
+        'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
+      var protocol = location.protocol == "http:" ? "ws://" : "wss://"
+      var ws = new WebSocket('ws://10.240.184.233:9002');
+      var canvas = document.getElementById('bgCanvas')
+      var ctx = canvas.getContext('2d');
+      var lastScreenSize = {
+        screen: {},
+        canvas: {}
+      };
+
+      ws.onopen = function(ev) {
+        console.log('screen websocket connected')
+      };
+      ws.onmessage = function(message) {
+        console.log("New message");
+        var blob = new Blob([message.data], {
+          type: 'image/jpeg'
+        })
+        var img = self.imagePool.next();
+        img.onload = function() {
+          canvas.width = img.width
+          canvas.height = img.height
+          ctx.drawImage(img, 0, 0, img.width, img.height);
+          self.resizeScreen(img);
+
+          // Try to forcefully clean everything to get rid of memory
+          // leaks. Note self despite this effort, Chrome will still
+          // leak huge amounts of memory when the developer tools are
+          // open, probably to save the resources for inspection. When
+          // the developer tools are closed no memory is leaked.
+          img.onload = img.onerror = null
+          img.src = BLANK_IMG
+          img = null
+          blob = null
+
+          URL.revokeObjectURL(url)
+          url = null
+        }
+
+        img.onerror = function() {
+          // Happily ignore. I suppose this shouldn't happen, but
+          // sometimes it does, presumably when we're loading images
+          // too quickly.
+
+          // Do the same cleanup here as in onload.
+          img.onload = img.onerror = null
+          img.src = BLANK_IMG
+          img = null
+          blob = null
+
+          URL.revokeObjectURL(url)
+          url = null
+        }
+        var url = URL.createObjectURL(blob)
+        img.src = url;
+      }
+
+      ws.onclose = function(ev) {
+        console.log("screen websocket closed")
+      }
+    },
+    codeInsertPrepare: function(line) {
+      if (/if $/.test(line)) {
+        return;
+      }
+      if (/if$/.test(line)) {
+        this.editor.insert(' ');
+        return;
+      }
+      if (line.trimLeft()) {
+        this.editor.navigateLineEnd();
+        this.editor.insert("\n");
+        return;
+      }
+    },
+    getNodeIndex: function(id, kvs) {
+      var skip = false;
+      return this.nodes.filter(function(node) {
+        if (skip) {
+          return false;
+        }
+        var ok = kvs.every(function(kv) {
+          var k = kv[0],
+            v = kv[1];
+          return node[k] == v;
+        })
+        if (ok && id == node.id) {
+          skip = true;
+        }
+        return ok;
+      }).length - 1;
+    },
+    codeInsertNode: function(node) {
+      var self = this;
+
+      function combineKeyValue(key, value) {
+        return key + '=' + '"' + value + '"';
+      }
+      var index = 0;
+      var params = [];
+      var kvs = [];
+      // iOS: name, label, className
+      // Android: text, description, resourceId, className
+      ['label', 'name', 'text', 'description', 'resourceId', 'className'].some(function(key) {
+        if (!node[key]) {
+          return false;
+        }
+        params.push(combineKeyValue(key, node[key]));
+        kvs.push([key, node[key]]);
+        index = self.getNodeIndex(node.id, kvs);
+        return self.codeShortFlag && index == 0;
+      });
+      if (index > 0) {
+        params.push('instance=' + index);
+      }
+      var code = 'd(' + params.join(', ') + ').click()';
+      var editor = this.editor;
+      var currentLine = editor.session.getLine(editor.getCursorPosition().row);
+      this.codeInsertPrepare(currentLine);
+      this.editor.insert(code);
+    },
+    activeMouseControl: function() {
+      var self = this;
+      var element = this.canvas.fg;
+
+      var screen = {
+        bounds: {}
+      }
+
+      function calculateBounds() {
+        var el = element;
+        screen.bounds.w = el.offsetWidth
+        screen.bounds.h = el.offsetHeight
+        screen.bounds.x = 0
+        screen.bounds.y = 0
+
+        while (el.offsetParent) {
+          screen.bounds.x += el.offsetLeft
+          screen.bounds.y += el.offsetTop
+          el = el.offsetParent
+        }
+      }
+
+      function activeFinger(index, x, y, pressure) {
+        var scale = 0.5 + pressure
+        $(".finger-" + index)
+          .addClass("active")
+          .css("transform", 'translate3d(' + x + 'px,' + y + 'px,0)')
+      }
+
+      function deactiveFinger(index) {
+        $(".finger-" + index).removeClass("active")
+      }
+
+      function mouseMoveListener(event) {
+        var e = event
+        if (e.originalEvent) {
+          e = e.originalEvent
+        }
+        // Skip secondary click
+        if (e.which === 3) {
+          return
+        }
+        e.preventDefault()
+
+        var x = e.pageX - screen.bounds.x
+        var y = e.pageY - screen.bounds.y
+        var pressure = 0.5
+        activeFinger(0, e.pageX, e.pageY, pressure);
+        // that.touchMove(0, x / screen.bounds.w, y / screen.bounds.h, pressure);
+      }
+
+      function mouseUpListener(event) {
+        var e = event
+        if (e.originalEvent) {
+          e = e.originalEvent
+        }
+        // Skip secondary click
+        if (e.which === 3) {
+          return
+        }
+        e.preventDefault()
+
+        // that.touchUp(0);
+        stopMousing()
+      }
+
+      function stopMousing() {
+        element.removeEventListener('mousemove', mouseMoveListener);
+        element.addEventListener('mousemove', mouseHoverListener);
+        document.removeEventListener('mouseup', mouseUpListener);
+        deactiveFinger(0);
+      }
+
+      function mouseDownListener(event) {
+        var e = event;
+        if (e.originalEvent) {
+          e = e.originalEvent
+        }
+        // Skip secondary click
+        if (e.which === 3) {
+          return
+        }
+        e.preventDefault()
+
+        fakePinch = e.altKey
+        calculateBounds()
+          // startMousing()
+
+        var x = e.pageX - screen.bounds.x
+        var y = e.pageY - screen.bounds.y
+        var pressure = 0.5
+        activeFinger(0, e.pageX, e.pageY, pressure);
+
+        if (self.nodeSelected) {
+          self.codeInsertNode(self.nodeSelected);
+        }
+        // self.touchDown(0, x / screen.bounds.w, y / screen.bounds.h, pressure);
+
+        element.removeEventListener('mousemove', mouseHoverListener);
+        element.addEventListener('mousemove', mouseMoveListener);
+        document.addEventListener('mouseup', mouseUpListener);
+      }
+
+      function coord(event) {
+        var e = event;
+        if (e.originalEvent) {
+          e = e.originalEvent
+        }
+        calculateBounds()
+        var x = e.pageX - screen.bounds.x
+        var y = e.pageY - screen.bounds.y
+        return {
+          x: Math.floor(x / screen.bounds.w * element.width),
+          y: Math.floor(y / screen.bounds.h * element.height),
+        }
+      }
+
+      function isInside(node, x, y) {
+        var lx = node.bounds[0],
+          ly = node.bounds[1],
+          rx = node.bounds[2],
+          ry = node.bounds[3];
+        return lx < x && x < rx && ly < y && y < ry;
+      }
+
+      function mouseHoverListener(event) {
+        var e = event;
+        if (e.originalEvent) {
+          e = e.originalEvent
+        }
+        // Skip secondary click
+        if (e.which === 3) {
+          return
+        }
+        e.preventDefault()
+          // startMousing()
+
+        var x = e.pageX - screen.bounds.x
+        var y = e.pageY - screen.bounds.y
+        var pos = coord(event);
+
+        var canvas = self.canvas.fg;
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        self.nodes.forEach(function(node) {
+          // self.drawNode(node, 'gray', false);
+          self.drawNode(node, 'black', true);
+        })
+        self.nodeSelected = null;
+        var minArea = Infinity;
+        var activeNodes = self.nodes.filter(function(node) {
+          if (!isInside(node, pos.x, pos.y)) {
+            return false;
+          }
+          var bs = node.bounds;
+          var area = (bs[2] - bs[0]) * (bs[3] - bs[1]);
+          if (area < minArea) {
+            minArea = area;
+            self.nodeSelected = node;
+          }
+          return true;
+        })
+        activeNodes.forEach(function(node) {
+          self.drawNode(node, "blue")
+        })
+        self.drawNode(self.nodeSelected, "red");
+      }
+
+      /* bind listeners */
+      element.addEventListener('mousedown', mouseDownListener);
+      element.addEventListener('mousemove', mouseHoverListener);
+    }
+  }
+})
+
+
+
+// editor.setTheme("ace/theme/monokai");
+// editor.getSession().setMode("ace/mode/javascript");
+</script>
+
+</html>

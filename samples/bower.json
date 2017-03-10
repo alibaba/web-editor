@@ -1,0 +1,20 @@
+{
+  "name": "samples",
+  "authors": [
+    "codeskyblue <codeskyblue@gmail.com>"
+  ],
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jQuery-contextMenu": "^2.4.3"
+  }
+}
