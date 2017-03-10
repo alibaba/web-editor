@@ -8,6 +8,7 @@ import os
 import hashlib
 import argparse
 import base64
+import webbrowser
 from io import BytesIO
 
 import atx
@@ -17,7 +18,7 @@ import tornado.websocket
 import tornado.escape
 from tornado.escape import json_encode
 
-import uidumplib
+from weditor import uidumplib
 
 
 __dir__ = os.path.dirname(os.path.abspath(__file__))
@@ -244,8 +245,8 @@ def run_web(self, *args):
         'template_path': os.path.join(__dir__, 'static'),
         'debug': True,
     })
-    port = 11230
-    print('Good', port)
+    port = 17310
+    print('listen port', port)
     application.listen(port)
     tornado.ioloop.IOLoop.instance().start()
 
@@ -253,11 +254,13 @@ def run_web(self, *args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('-q', '--quiet', action='store_true', help='quite mode, no open new browser')
-    ap.add_argument('port', nargs='?', default=11230, help='local listen port for weditor')
+    ap.add_argument('port', nargs='?', default=17310, help='local listen port for weditor')
 
     args = ap.parse_args()
     open_browser = not args.quiet
 
+    if open_browser:
+        webbrowser.open_new_tab('http://atx.open.netease.com')
     run_web(args.port, open_browser)
 
 

@@ -196,7 +196,7 @@ section {
 <script>
 </script>
 <script>
-window.LOCAL_URL = 'http://localhost:11230/';
+window.LOCAL_URL = 'http://localhost:17310/';
 
 /* Image Pool */
 function ImagePool(size) {
@@ -436,7 +436,7 @@ var app = new Vue({
       var self = this;
       $.ajax({
         method: 'PUT',
-        url: 'http://localhost:11230/api/v1/contents/' + file.path,
+        url: LOCAL_URL + 'api/v1/contents/' + file.path,
         data: JSON.stringify({
           content: self.editor.getValue(),
           sha: file.sha,
