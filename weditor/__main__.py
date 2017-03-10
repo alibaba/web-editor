@@ -7,6 +7,7 @@ from __future__ import print_function
 import os
 import hashlib
 import argparse
+import signal
 import base64
 import webbrowser
 from io import BytesIO
@@ -238,16 +239,32 @@ def make_app(settings={}):
     ], **settings)
     return application
 
+is_closing = False
 
-def run_web(self, *args):
+def signal_handler(signum, frame):
+    global is_closing
+    print('exiting...')
+    is_closing = True
+
+def try_exit(): 
+    global is_closing
+    if is_closing:
+        # clean up here
+        tornado.ioloop.IOLoop.instance().stop()
+        print('exit success')
+
+
+def run_web(debug=False):
     application = make_app({
         'static_path': os.path.join(__dir__, 'static'),
         'template_path': os.path.join(__dir__, 'static'),
-        'debug': True,
+        'debug': debug,
     })
     port = 17310
     print('listen port', port)
+    signal.signal(signal.SIGINT, signal_handler)
     application.listen(port)
+    tornado.ioloop.PeriodicCallback(try_exit, 100).start() 
     tornado.ioloop.IOLoop.instance().start()
 
 
@@ -260,8 +277,9 @@ def main():
     open_browser = not args.quiet
 
     if open_browser:
-        webbrowser.open_new_tab('http://atx.open.netease.com')
-    run_web(args.port, open_browser)
+        # webbrowser.open(url, new=2)
+        webbrowser.open('http://atx.open.netease.com', new=2)
+    run_web()
 
 
 if __name__ == '__main__':
