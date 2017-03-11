@@ -109,10 +109,14 @@ def travel_dom(root, scale, result=[]):
 def get_uiview(d):
     is_android = d.platform == 'android'
     if is_android:
-        page_xml = d.dump().encode('utf-8')
+        page_xml = d.dump(compressed=False, pretty=False).encode('utf-8')
     else:
         page_xml = d.dump_view().encode('utf-8')
 
+    # page_xml = sample_android_page_xml
+    with open('debug.xml', 'wb') as f:
+        f.write(page_xml)
+        
     dom = xml.dom.minidom.parseString(page_xml)
     root = dom.documentElement
 
