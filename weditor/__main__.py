@@ -5,11 +5,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
+import time
 import hashlib
 import argparse
 import signal
 import base64
 import webbrowser
+import traceback
 from io import BytesIO
 
 import atx
@@ -18,9 +20,21 @@ import tornado.web
 import tornado.websocket
 import tornado.escape
 from tornado.escape import json_encode
+from tornado.log import enable_pretty_logging
+from tornado.concurrent import run_on_executor
+from concurrent.futures import ThreadPoolExecutor   # `pip install futures` for python2
+
+try:
+    import subprocess32 as subprocess
+    from subprocess32 import PIPE
+except:
+    import subprocess
+    from subprocess import PIPE
 
 from weditor import uidumplib
 
+
+enable_pretty_logging()
 
 __dir__ = os.path.dirname(os.path.abspath(__file__))
 __devices = {}
@@ -227,6 +241,52 @@ class DeviceUIViewHandler(BaseHandler):
         })
 
 
+class BuildWSHandler(tornado.websocket.WebSocketHandler):
+    executor = ThreadPoolExecutor(max_workers=1)
+    proc = None
+
+    def check_origin(self, origin):
+        return True
+
+    @run_on_executor
+    @tornado.gen.coroutine
+    def _run(self, code):
+        try:
+            print("DEBUG: run code", code)
+            read, write = os.pipe()
+            os.write(write, code)
+            os.close(write)
+            start_time = time.time()
+            self.proc = subprocess.Popen(["python", "-u"], 
+                    stdout=PIPE, stderr=subprocess.STDOUT, stdin=read, bufsize=1)
+            for line in iter(self.proc.stdout.readline, b''):
+                if line is None:
+                    break
+                print(type(line))
+                self.write_message({"buffer": line})
+            exit_code = self.proc.wait()
+            duration = time.time() - start_time
+            self.write_message({
+                "buffer": "finished",
+                "result": {"exitCode": exit_code, "duration": int(duration)*1000}
+            })
+        except Exception:
+            traceback.print_exc()
+
+    def open(self):
+        print("Websocket opened")
+
+    # oper: "stop"
+    # code: "print ('hello')"
+    @tornado.gen.coroutine
+    def on_message(self, message):
+        # self.write_message("you said: " + message)
+        yield self._run(message.encode('utf-8'))
+
+    def on_close(self):
+        print("Websocket closed")
+
+
 def make_app(settings={}):
     # REST API REFERENCE
     # https://developer.github.com/v3/repos/contents/
@@ -236,6 +296,7 @@ def make_app(settings={}):
         (r"/api/v1/contents/([^/]*)", FileHandler),
         (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
         (r"/api/v1/devices/([^/]+)/uiview", DeviceUIViewHandler),
+        (r"/ws/v1/build", BuildWSHandler),
     ], **settings)
     return application
 
@@ -271,6 +332,7 @@ def run_web(debug=False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('-q', '--quiet', action='store_true', help='quite mode, no open new browser')
+    ap.add_argument('-d', '--debug', action='store_true', help='open debug mode')
     ap.add_argument('port', nargs='?', default=17310, help='local listen port for weditor')
 
     args = ap.parse_args()
@@ -279,7 +341,7 @@ def main():
     if open_browser:
         # webbrowser.open(url, new=2)
         webbrowser.open('http://atx.open.netease.com', new=2)
-    run_web()
+    run_web(args.debug)
 
 
 if __name__ == '__main__':
