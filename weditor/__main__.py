@@ -40,11 +40,12 @@ __dir__ = os.path.dirname(os.path.abspath(__file__))
 __devices = {}
 
 def get_device(serial):
-    d = __devices.get(serial)
-    if d:
-        return d
-    __devices[serial] = atx.connect(None if serial == 'default' else serial)
-    return __devices.get(serial)
+    return atx.connect(None if serial == 'default' else serial)
+    # d = __devices.get(serial)
+    # if d:
+    #     return d
+    # __devices[serial] = atx.connect(None if serial == 'default' else serial)
+    # return __devices.get(serial)
 
 
 def read_file_content(filename, default=''):
