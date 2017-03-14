@@ -13,3 +13,4 @@ deploy:
   on:
     distributions: sdist bdist_wheel
     repo: openatx/weditor
+    branch: master
