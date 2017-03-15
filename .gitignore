@@ -93,3 +93,4 @@ ENV/
 # Rope project settings
 .ropeproject
 bower_components
+CHANGELOG

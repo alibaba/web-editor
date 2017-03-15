@@ -113,6 +113,7 @@ class DeviceScreenshotHandler(BaseHandler):
                 "data": b64data,
             })
         except EnvironmentError as e:
+            traceback.print_exc()
             self.set_status(430, "Environment Error")
             self.write({
                 "description": str(e)
