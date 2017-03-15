@@ -99,18 +99,24 @@ class VersionHandler(BaseHandler):
 class DeviceScreenshotHandler(BaseHandler):
     def get(self, serial):
         print("SN", serial)
-        d = get_device(serial)
-        buffer = BytesIO()
-        d.screenshot().save(buffer, format='JPEG')
-        b64data = base64.b64encode(buffer.getvalue())
-        # with open('bg.jpg', 'rb') as f:
+        try:
+            d = get_device(serial)
+            buffer = BytesIO()
+            d.screenshot().save(buffer, format='JPEG')
+            b64data = base64.b64encode(buffer.getvalue())
+            # with open('bg.jpg', 'rb') as f:
 
-        # b64data = base64.b64encode(f.read())
-        self.write({
-            "type": "jpeg",
-            "encoding": "base64",
-            "data": b64data,
-        })
+            # b64data = base64.b64encode(f.read())
+            self.write({
+                "type": "jpeg",
+                "encoding": "base64",
+                "data": b64data,
+            })
+        except EnvironmentError as e:
+            self.set_status(430, "Environment Error")
+            self.write({
+                "description": str(e)
+            })
 
 
 class FileHandler(BaseHandler):
