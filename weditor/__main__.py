@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import os
 import time
+import json
 import hashlib
 import argparse
 import signal
@@ -33,6 +34,8 @@ except:
 
 from weditor import uidumplib
 
+
+__version__ = '0.0.2'
 
 enable_pretty_logging()
 
@@ -92,7 +95,7 @@ class BaseHandler(tornado.web.RequestHandler):
 class VersionHandler(BaseHandler):
     def get(self):
         self.write({
-            'name': '0.0.1',
+            'name': __version__,
         })
 
 
@@ -243,10 +246,17 @@ class MainHandler(BaseHandler):
 
 class DeviceUIViewHandler(BaseHandler):
     def get(self, serial):
-        d = get_device(serial)
-        self.write({
-            'nodes': uidumplib.get_uiview(d)
-        })
+        try:
+            d = get_device(serial)
+            self.write({
+                'nodes': uidumplib.get_uiview(d)
+            })
+        except EnvironmentError as e:
+            traceback.print_exc()
+            self.set_status(430, "Environment Error")
+            self.write({
+                "description": str(e)
+            })
 
 
 class BuildWSHandler(tornado.websocket.WebSocketHandler):
@@ -261,16 +271,20 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
     def _run(self, code):
         try:
             print("DEBUG: run code", code)
-            read, write = os.pipe()
-            os.write(write, code)
-            os.close(write)
+            # read, write = os.pipe()
+            # os.write(write, code)
+            # os.close(write)
+            env = os.environ.copy()
+            env['UIAUTOMATOR_DEBUG'] = 'true'
             start_time = time.time()
-            self.proc = subprocess.Popen(["python", "-u"], 
-                    stdout=PIPE, stderr=subprocess.STDOUT, stdin=read, bufsize=1)
+            self.proc = subprocess.Popen(["python", "-u"],
+                env=env, stdout=PIPE, stderr=subprocess.STDOUT, stdin=PIPE, bufsize=1)
+            self.proc.stdin.write(code)
+            self.proc.stdin.close()
             for line in iter(self.proc.stdout.readline, b''):
+                print("recv subprocess:", repr(line))
                 if line is None:
                     break
-                print(type(line))
                 self.write_message({"buffer": line})
             exit_code = self.proc.wait()
             duration = time.time() - start_time
@@ -288,8 +302,9 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
     # code: "print ('hello')"
     @tornado.gen.coroutine
     def on_message(self, message):
-        # self.write_message("you said: " + message)
-        yield self._run(message.encode('utf-8'))
+        jdata = json.loads(message)
+        code = jdata['content']
+        yield self._run(code.encode('utf-8'))
 
     def on_close(self):
         print("Websocket closed")
@@ -349,6 +364,9 @@ def main():
     if open_browser:
         # webbrowser.open(url, new=2)
         webbrowser.open('http://atx.open.netease.com', new=2)
+    if args.debug:
+        import uiautomator
+        uiautomator.DEBUG = True
     run_web(args.debug)
 
 
