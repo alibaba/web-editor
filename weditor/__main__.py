@@ -292,6 +292,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
                 "buffer": "finished",
                 "result": {"exitCode": exit_code, "duration": int(duration)*1000}
             })
+            self.close()
         except Exception:
             traceback.print_exc()
 
