@@ -16,6 +16,22 @@ python -m weditor
 ```
 
 # API
+### Get Version
+This method returns local server version
+
+```
+GET /api/v1/version
+```
+
+#### Response
+Status: 200
+
+```json
+{
+	"name": "0.0.2"
+}
+```
+
 ## File API
 
 ### Get contents
@@ -129,41 +145,75 @@ GET /api/v1/devices/:serial/screenshot
 }
 ```
 
+#### Response if error
+Status: 403
+
+```json
+{
+	"description": "Some reason"
+}
+```
+
+### Get UIView
+Get uiview with json response
+
+```
+GET /api/v1/devices/{serial}/uiview
+```
+
+#### Response
+Status: 200
+
+Every node will always has an `id` field. iOS and Android got the some response structure.
+
+
+```json
+{
+	"nodes": [{
+		"id": 0,
+		"text": "Hello",
+		"description": "hello",
+		"other...": "..."
+	}, {
+		"id": 1,
+		"other...": ".."
+	}]
+}
+```
+
 ## Python Debug WebSocket API
 ### Run code
 This method run and get the live output
 
 ```
-CONNECT /api/v1/ipython/:path
+WebSocket CONNECT /api/v1/build
 ```
 
-#### Response
-JSON line by line
-
-At beginning
+SEND json data
 
 ```json
 {
-	"section": "abcd"
+	"content": "print('hello')"
 }
 ```
 
-Finally
+RECV json data when running
 
 ```json
 {
-	"section": "",
-	"duration": 1000223,
-	"exit": 0
+	"buffer": "hello"
 }
 ```
 
-### Cancel run
-Send JSON message to server
+RECV json data when finished. __duration unit is ms.__
 
 ```json
 {
-	"stop": true
+	"buffer": "end ...",
+	"result": {
+		"duration": 1002,
+		"exitCode": 1
+	}
 }
 ```
 
