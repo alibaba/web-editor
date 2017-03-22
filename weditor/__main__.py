@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
+import platform
 import time
 import json
 import hashlib
@@ -260,8 +261,12 @@ class DeviceUIViewHandler(BaseHandler):
 
 
 class BuildWSHandler(tornado.websocket.WebSocketHandler):
-    executor = ThreadPoolExecutor(max_workers=1)
-    proc = None
+    executor = ThreadPoolExecutor(max_workers=4)
+    # proc = None
+
+    def open(self):
+        print("Websocket opened")
+        self.proc = None
 
     def check_origin(self, origin):
         return True
@@ -289,23 +294,31 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             exit_code = self.proc.wait()
             duration = time.time() - start_time
             self.write_message({
-                "buffer": "finished",
+                "buffer": "",
                 "result": {"exitCode": exit_code, "duration": int(duration)*1000}
             })
             self.close()
         except Exception:
             traceback.print_exc()
 
-    def open(self):
-        print("Websocket opened")
-
     # oper: "stop"
     # code: "print ('hello')"
     @tornado.gen.coroutine
     def on_message(self, message):
         jdata = json.loads(message)
-        code = jdata['content']
-        yield self._run(code.encode('utf-8'))
+        if self.proc is None:
+            code = jdata['content']
+            yield self._run(code.encode('utf-8'))
+        else:
+            self.proc.terminate()
+            # on Windows, kill is alais of terminate()
+            if platform.system() == 'Windows':
+                return
+            yield tornado.gen.sleep(2)
+            if self.poll():
+                return
+            print("Force to kill")
+            self.proc.kill()
 
     def on_close(self):
         print("Websocket closed")
