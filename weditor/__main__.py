@@ -273,7 +273,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
 
     @run_on_executor
     @tornado.gen.coroutine
-    def _run(self, code):
+    def _run(self, device_url, code):
         try:
             print("DEBUG: run code", code)
             # read, write = os.pipe()
@@ -281,6 +281,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             # os.close(write)
             env = os.environ.copy()
             env['UIAUTOMATOR_DEBUG'] = 'true'
+            env['ATX_DEVICE_URL'] = device_url
             start_time = time.time()
             self.proc = subprocess.Popen(["python", "-u"],
                 env=env, stdout=PIPE, stderr=subprocess.STDOUT, stdin=PIPE, bufsize=1)
@@ -308,7 +309,8 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
         jdata = json.loads(message)
         if self.proc is None:
             code = jdata['content']
-            yield self._run(code.encode('utf-8'))
+            device_url = jdata.get('deviceUrl')
+            yield self._run(device_url, code.encode('utf-8'))
         else:
             self.proc.terminate()
             # on Windows, kill is alais of terminate()
