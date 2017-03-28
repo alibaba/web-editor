@@ -38,7 +38,10 @@ from weditor import uidumplib
 
 __version__ = '0.0.2'
 
-enable_pretty_logging()
+try:
+    enable_pretty_logging()
+except:
+    pass
 
 __dir__ = os.path.dirname(os.path.abspath(__file__))
 __devices = {}
@@ -281,7 +284,8 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             # os.close(write)
             env = os.environ.copy()
             env['UIAUTOMATOR_DEBUG'] = 'true'
-            env['ATX_DEVICE_URL'] = device_url
+            if device_url:
+                env['ATX_CONNECT_URL'] = device_url.encode('utf-8')
             start_time = time.time()
             self.proc = subprocess.Popen(["python", "-u"],
                 env=env, stdout=PIPE, stderr=subprocess.STDOUT, stdin=PIPE, bufsize=1)
