@@ -117,7 +117,7 @@ class DeviceScreenshotHandler(BaseHandler):
             self.write({
                 "type": "jpeg",
                 "encoding": "base64",
-                "data": b64data,
+                "data": b64data.decode('utf-8'),
             })
         except EnvironmentError as e:
             traceback.print_exc()
