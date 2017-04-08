@@ -1,7 +1,7 @@
 WEditor
 ================
 .. image:: https://img.shields.io/pypi/v/weditor.svg?style=flat-square
-    :target: https://github.com/openatx/weditor
+    :target: https://pypi.python.org/pypi/weditor
 .. image:: https://img.shields.io/github/stars/openatx/weditor.svg?style=social&label=Star&style=flat-square
     :target: https://github.com/openatx/weditor
 .. image:: https://travis-ci.org/openatx/weditor.svg?branch=master
