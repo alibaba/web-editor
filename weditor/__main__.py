@@ -295,7 +295,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
                 print("recv subprocess:", repr(line))
                 if line is None:
                     break
-                self.write_message({"buffer": line})
+                self.write_message({"buffer": line.decode('utf-8')})
             exit_code = self.proc.wait()
             duration = time.time() - start_time
             self.write_message({
