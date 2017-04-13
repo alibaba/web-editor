@@ -118,7 +118,7 @@ class DeviceScreenshotHandler(BaseHandler):
             self.write({
                 "type": "jpeg",
                 "encoding": "base64",
-                "data": b64data,
+                "data": b64data.decode('utf-8'),
             })
         except EnvironmentError as e:
             traceback.print_exc()
@@ -296,7 +296,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
                 print("recv subprocess:", repr(line))
                 if line is None:
                     break
-                self.write_message({"buffer": line})
+                self.write_message({"buffer": line.decode('utf-8')})
             exit_code = self.proc.wait()
             duration = time.time() - start_time
             self.write_message({
