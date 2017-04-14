@@ -16,6 +16,7 @@ import webbrowser
 import traceback
 from io import BytesIO
 
+import six
 import atx
 import tornado.ioloop
 import tornado.web
@@ -45,6 +46,15 @@ except:
 
 __dir__ = os.path.dirname(os.path.abspath(__file__))
 __devices = {}
+
+
+def tostr(s, encoding='utf-8'):
+    if six.PY2:
+        return s.encode(encoding)
+    if isinstance(s, bytes):
+        return s.decode(encoding)
+    return s
+
 
 def get_device(serial):
     return atx.connect(None if serial == 'default' else serial)
@@ -286,7 +296,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             env = os.environ.copy()
             env['UIAUTOMATOR_DEBUG'] = 'true'
             if device_url:
-                env['ATX_CONNECT_URL'] = device_url.encode('utf-8')
+                env['ATX_CONNECT_URL'] = tostr(device_url)
             start_time = time.time()
             self.proc = subprocess.Popen(["python", "-u"],
                 env=env, stdout=PIPE, stderr=subprocess.STDOUT, stdin=PIPE, bufsize=1)
@@ -317,15 +327,21 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             device_url = jdata.get('deviceUrl')
             yield self._run(device_url, code.encode('utf-8'))
         else:
-            self.proc.terminate()
-            # on Windows, kill is alais of terminate()
-            if platform.system() == 'Windows':
-                return
-            yield tornado.gen.sleep(2)
-            if self.poll():
-                return
-            print("Force to kill")
-            self.proc.kill()
+            try:
+                self.proc.terminate()
+                # on Windows, kill is alais of terminate()
+                if platform.system() == 'Windows':
+                    return
+                yield tornado.gen.sleep(0.5)
+                if self.proc.poll():
+                    return
+                yield tornado.gen.sleep(1.2)
+                if self.proc.poll():
+                    return
+                print("Force to kill")
+                self.proc.kill()
+            except WindowsError as e:
+                print("Kill error on windows " + str(e))
 
     def on_close(self):
         print("Websocket closed")
