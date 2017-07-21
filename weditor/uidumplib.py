@@ -111,7 +111,7 @@ def get_uiview(d):
     if is_android:
         page_xml = d.dump(compressed=False, pretty=False).encode('utf-8')
     else:
-        page_xml = d.dump_view().encode('utf-8')
+        page_xml = d.source().encode('utf-8')
 
     # page_xml = sample_android_page_xml
     with open('debug.xml', 'wb') as f:

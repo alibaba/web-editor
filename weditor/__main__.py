@@ -120,7 +120,7 @@ class DeviceScreenshotHandler(BaseHandler):
         try:
             d = get_device(serial)
             buffer = BytesIO()
-            d.screenshot().save(buffer, format='JPEG')
+            d.screenshot().convert("RGB").save(buffer, format='JPEG')
             b64data = base64.b64encode(buffer.getvalue())
             # with open('bg.jpg', 'rb') as f:
 
