@@ -295,7 +295,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             # os.close(write)
             env = os.environ.copy()
             env['UIAUTOMATOR_DEBUG'] = 'true'
-            if device_url:
+            if device_url and device_url != 'default':
                 env['ATX_CONNECT_URL'] = tostr(device_url)
             start_time = time.time()
             self.proc = subprocess.Popen(["python", "-u"],
