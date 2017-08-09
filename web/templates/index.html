@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>WEditor</title>
+  <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/bootstrap/3.3.7/css/bootstrap.min.css">
+  <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+  <link rel="stylesheet" type="text/css" href="/static/libs/css/buttons.css">
+  <link rel="stylesheet" type="text/css" href="/static/libs/fontawesome/css/font-awesome.min.css">
+  <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.select/1.12.2/css/bootstrap-select.min.css">
+</head>
+<style>
+  * {
+    margin: 0px;
+    padding: 0px;
+  }
+  
+  .color-red {
+    color: red;
+  }
+  
+  html,
+  body {
+    height: 100%;
+    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
+    /*display: flex;*/
+  }
+  
+  .finger {
+    position: absolute;
+    border-style: solid;
+    border-radius: 50%;
+    border-color: white;
+    border-width: 0mm;
+    width: 6mm;
+    height: 6mm;
+    top: -3mm;
+    left: -3mm;
+    opacity: 0.7;
+    pointer-events: none;
+    background: white;
+    /*#464646;*/
+    /*background: red;*/
+    display: none;
+  }
+  
+  .finger.active {
+    display: block;
+    border-color: #464646;
+    border-width: 1mm;
+  }
+  
+  #app {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #left {
+    /*height: 100%;*/
+    display: flex;
+    flex-direction: column;
+    width: 600px;
+  }
+  
+  div.middle {
+    width: 400px;
+    overflow-y: auto;
+  }
+  
+  #right {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    /*border: 1px solid red;*/
+    /*position: relative;*/
+  }
+  
+  section {
+    /*border: 1px solid red;*/
+  }
+  
+  #screen {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    background-color: gray;
+  }
+  
+  #footer {
+    height: 50px;
+    display: flex;
+    justify-content: space-around;
+  }
+  
+  #footer>button {
+    flex: 1;
+  }
+  
+  .box {
+    position: relative;
+    display: flex;
+    flex: 1;
+  }
+  
+  #editor {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+  
+  #console {
+    height: 150px;
+    /*border: 1px solid green;*/
+    background-color: #eee;
+    word-break: break-all;
+    padding: 0px;
+    position: relative;
+    background-color: #f5f5f5;
+    overflow: auto;
+  }
+  
+  #console>pre {
+    font-family: "Courier New";
+    font-size: 13px;
+    padding: 2px 5px;
+    /*height: 100%;*/
+    border: 0px;
+  }
+  
+  #console>img {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+  }
+  
+  #upper {
+    width: 100%;
+    display: flex;
+    flex: 1;
+    border-top: 1px solid black;
+  }
+  
+  #toolbar {
+    border: 1px solid green;
+  }
+  
+  .vertical-gap {
+    width: 5px;
+    background-color: #444444;
+  }
+  
+  .vertical-gap:hover {
+    cursor: col-resize;
+    background-color: black;
+  }
+  
+  .horizon-gap {
+    height: 5px;
+    background-color: #444444;
+  }
+  
+  .horizon-gap:hover {
+    cursor: row-resize;
+    background-color: black;
+  }
+  
+  .canvas-fg {
+    z-index: 1;
+    position: absolute;
+  }
+  
+  .canvas-bg {
+    z-index: 0;
+    position: absolute;
+  }
+  
+  .table-weditor {
+    word-wrap: break-word;
+    table-layout: fixed;
+  }
+</style>
+
+<body>
+  <div id="app">
+    <nav class="navbar navbar-default" style="margin-bottom: 0px">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">WEditor</a>
+      </div>
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <!--         <ul class="nav navbar-nav">
+          <li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
+        </ul> -->
+        <form class="navbar-form navbar-left" onsubmit="return false">
+          <div class="form-group">
+            <select v-model="platform" class="selectpicker" value="Android" title="Platform" data-width="fit">
+              <option data-icon="glyphicon-piggy-bank">Android</option>
+              <option data-icon="glyphicon-apple">iOS</option>
+            </select>
+            <input type="text" v-model="serial" class="form-control" v-bind:placeholder="deviceUrl">
+          </div>
+          <button type="submit" class="btn btn-default" v-on:click="screenDumpUI()">Connect</button>
+        </form>
+      </div>
+    </nav>
+    <div id="upper">
+      <div id="left">
+        <div>
+        </div>
+        <section id="screen">
+          <canvas id="fgCanvas" class="canvas-fg" v-bind:style="canvasStyle"></canvas>
+          <canvas id="bgCanvas" class="canvas-bg" v-bind:style="canvasStyle"></canvas>
+          <span class="finger finger-0" style="transform: translate3d(200px, 100px, 0px)"></span>
+          <img style="z-index: 10" v-if="loading" src="/static/loading.svg">
+        </section>
+        <section id="footer">
+          <button class="btn" @click="keyeventHome()"><i class="fa fa-home"></i>Home</button>
+          <button class="btn" disabled="true">Back</button>
+          <button class="btn" disabled="true">Menu</button>
+        </section>
+      </div>
+      <div id="vertical-gap1" class="handle vertical-gap"></div>
+      <div class="middle">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <i class="fa fa-empire" aria-hidden="true"></i> Selected Element
+            <span class="pull-right">
+              <button :disabled="loading" class="button button-primary button-tiny button-rounded" v-on:click="screenDumpUI()">
+                <i class="fa fa-refresh"></i> Reload
+              </button>
+            </span>
+          </div>
+          <div class="panel-body">
+            <div class="text-center">
+              <button class="btn btn-default btn-sm" :disabled="!nodeSelected" v-on:click="codeInsertNode(nodeSelected)">Tap</button>
+              <button class="btn btn-default btn-sm" v-on:click="doSendKeys('')">Send Keys</button>
+              <button class="btn btn-default btn-sm" v-on:click="doClear()">Clear Text</button>
+            </div>
+            <label>
+              <input type="checkbox" v-model="codeShortFlag"> 精简代码
+            </label>
+          </div>
+          <table class="table table-bordered table-weditor table-condensed">
+            <thead>
+              <tr>
+                <th style="width: 8em">Prop</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>ClassName</td>
+                <td v-text="elem.className"></td>
+              </tr>
+              <template v-if="platform == 'Android'">
+                <tr>
+                  <td>Text</td>
+                  <td v-text="elem.text"></td>
+                </tr>
+                <tr>
+                  <td>Description</td>
+                  <td v-text="elem.description"></td>
+                </tr>
+                <tr>
+                  <td>ResourceId</td>
+                  <td v-text="elem.resourceId"></td>
+                </tr>
+                <tr>
+                  <td>Clickable</td>
+                  <td v-text="elem.clickable"></td>
+                </tr>
+              </template>
+              <template v-if="platform == 'iOS'">
+                <tr>
+                  <td>Name</td>
+                  <td v-text="elem.name"></td>
+                </tr>
+                <tr>
+                  <td>Label</td>
+                  <td v-text="elem.label"></td>
+                </tr>
+                <tr>
+                  <td>X</td>
+                  <td v-text="elem.x"></td>
+                </tr>
+                <tr>
+                  <td>Y</td>
+                  <td v-text="elem.y"></td>
+                </tr>
+                <tr>
+                  <td>Width</td>
+                  <td v-text="elem.width"></td>
+                </tr>
+                <tr>
+                  <td>Height</td>
+                  <td v-text="elem.height"></td>
+                </tr>
+              </template>
+              <tr>
+                <td>Enabled</td>
+                <td v-text="elem.enabled"></td>
+              </tr>
+              <tr>
+                <td>XPath(beta)</td>
+                <td v-text="elemXpath"></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="panel-body">
+            <textarea class="form-control" v-model="debugCode" rows=5></textarea>
+            <div style="height: 5px"></div>
+            <div class="pull-right">
+              <button class="btn btn-default btn-sm" v-if="!codeRunning" v-on:click="codeRunDebug(debugCode)">Run</button>
+              <button class="btn btn-default btn-sm" v-if="codeRunning" v-on:click="codeStopRun">Stop</button>
+              <button class="btn btn-default btn-sm" v-on:click="codeInsert(debugCode)">Add <i class="fa fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vertical-gap"></div>
+      <div id="right">
+        <div class="panel panel-default" style="margin-bottom: 0px">
+          <div class="panel-heading">
+            <i class="fa fa-edit" aria-hidden="true"></i> {{!fs.file.name || "Untitled"}}
+            <span v-if="fs.file.changed">*</span>
+            <span class="pull-right">
+              <button v-if="!codeRunning" class="btn btn-default btn-xs" v-on:click="codeRun(editor.getValue())" disabled="true">
+                <i class="fa fa-play"></i> Open
+              </button>
+              <button v-if="!codeRunning" class="btn btn-default btn-xs" v-on:click="codeRun(editor.getValue())">
+                <i class="fa fa-play"></i> Run
+              </button>
+              <button v-if="codeRunning" class="btn btn-default btn-xs" v-on:click="codeStopRun">
+                <i class="fa fa-stop"></i> Stop
+              </button>
+              <button class="btn btn-default btn-xs" v-on:click="fileSave(fs.file)">
+                <i class="fa fa-save"></i> Save
+              </button>
+              <button class="btn btn-default btn-xs" v-on:click="fileCreate()">
+                <i class="fa fa-file"></i> New
+              </button>
+            </span>
+          </div>
+        </div>
+        <div class="box">
+          <div id="editor"></div>
+        </div>
+      </div>
+    </div>
+    <div class="horizon-gap"></div>
+    <div id="console">
+      <img v-if="codeRunning && !console.content" src="/static/running.svg">
+      <pre v-text="console.content"></pre>
+    </div>
+    <!-- alert and dialogs -->
+    <div class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title"><span class="color-red"><i class="fa fa-warning"></i> Error</span></h4>
+          </div>
+          <div class="modal-body">
+            <span v-html="error"></span>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+<script src="//cdn.jsdelivr.net/g/vue@2.1.10,jquery@3.1.1"></script>
+<script src="//cdn.jsdelivr.net/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="//cdn.jsdelivr.net/bootstrap.select/1.12.2/js/bootstrap-select.min.js"></script>
+<script src="/static/ace/ace.js"></script>
+<script src="/static/ace/mode-python.js"></script>
+<!-- <script src="http://10.240.187.174:8000/_d/js"></script> -->
+<script src="/static/js/index.js"></script>
+<script>
+  (function(i, s, o, g, r, a, m) {
+    i['GoogleAnalyticsObject'] = r;
+    i[r] = i[r] || function() {
+      (i[r].q = i[r].q || []).push(arguments)
+    }, i[r].l = 1 * new Date();
+    a = s.createElement(o),
+      m = s.getElementsByTagName(o)[0];
+    a.async = 1;
+    a.src = g;
+    m.parentNode.insertBefore(a, m)
+  })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+
+  ga('create', 'UA-81205425-3', 'auto');
+  ga('send', 'pageview');
+</script>
+
+</html>
