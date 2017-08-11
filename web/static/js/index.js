@@ -660,13 +660,15 @@ var app = new Vue({
       if (!text) {
         return;
       }
-      var code = 'd.type("' + text + '")'
+      var params = ['"' + text + '"', 'enter=True']
+      if (this.nodeSelected) {
+        params = params.concat(this.generateNodeSelectorParams(this.nodeSelected))
+      }
+      var code = 'd.type(' + params.join(', ') + ')'
       this.loading = true;
+      this.codeInsert(code);
       this.codeRun(this.generatePythonCode(code))
         .then(this.screenDumpUI)
-        .then(function() {
-          return this.codeInsert(code);
-        }.bind(this))
     },
     doClear: function() {
       var code = 'd.clear_text()'
@@ -676,18 +678,22 @@ var app = new Vue({
           return this.codeInsert(code);
         }.bind(this))
     },
-    codeGenNodeSelector: function(node) {
+    generateNodeSelectorParams: function(node) {
       var self = this;
 
       function combineKeyValue(key, value) {
-        return key + '=' + '"' + value + '"';
+        value = '"' + value + '"';
+        if (['text', 'name', 'label', 'description'].indexOf(key) >= 0) {
+          value = "u" + value; // python unicode
+        }
+        return key + '=' + value;
       }
       var index = 0;
       var params = [];
       var kvs = [];
       // iOS: name, label, className
       // Android: text, description, resourceId, className
-      ['label', 'name', 'text', 'description', 'resourceId', 'className'].some(function(key) {
+      ['label', 'resourceId', 'name', 'text', 'description', 'className'].some(function(key) {
         if (!node[key]) {
           return false;
         }
@@ -699,11 +705,15 @@ var app = new Vue({
       if (index > 0) {
         params.push('instance=' + index);
       }
+      return params;
+    },
+    generateNodeSelectorCode: function(node) {
+      var params = this.generateNodeSelectorParams(node);
       return 'd(' + params.join(', ') + ')';
     },
     codeInsertNode: function(node) {
       var self = this;
-      var code = this.codeGenNodeSelector(node);
+      var code = this.generateNodeSelectorCode(node);
       // FIXME(ssx): put into a standalone function
       code += ".click()"
       self.codeInsert(code);
@@ -876,7 +886,7 @@ var app = new Vue({
           self.drawAllNode()
             // self.drawHoverNode(pos);
           self.drawNode(self.nodeSelected, "red");
-          self.debugCode = self.codeGenNodeSelector(self.nodeSelected);
+          self.debugCode = self.generateNodeSelectorCode(self.nodeSelected);
         }
         // self.touchDown(0, x / screen.bounds.w, y / screen.bounds.h, pressure);
 
