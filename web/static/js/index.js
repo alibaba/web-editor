@@ -192,12 +192,15 @@ var app = new Vue({
   },
   methods: {
     keyeventHome: function() {
-      var self = this;
-      return this.codeRunDebug('d.home()').then(function() {
-        return self.codeInsert(code);
-      }).then(function() {
-        this.screenRefresh()
-      })
+      var code = 'd.home()'
+      if (this.platform == 'Android') {
+        code = 'd.press.home()'
+      }
+      return this.codeRunDebug(code)
+        .then(function() {
+          return this.codeInsert(code);
+        }.bind(this))
+        .then(this.screenRefresh)
     },
     loadCurrentFile: function() {
       this.fileLoad(this.fs.file.path)
@@ -711,7 +714,7 @@ var app = new Vue({
       var params = this.generateNodeSelectorParams(node);
       return 'd(' + params.join(', ') + ')';
     },
-    codeInsertNode: function(node) {
+    doTap: function(node) {
       var self = this;
       var code = this.generateNodeSelectorCode(node);
       // FIXME(ssx): put into a standalone function

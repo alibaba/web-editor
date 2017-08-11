@@ -246,7 +246,7 @@
           </div>
           <div class="panel-body">
             <div class="text-center">
-              <button class="btn btn-default btn-sm" :disabled="!nodeSelected" v-on:click="codeInsertNode(nodeSelected)">Tap</button>
+              <button class="btn btn-default btn-sm" :disabled="!nodeSelected" v-on:click="doTap(nodeSelected)">Tap</button>
               <button class="btn btn-default btn-sm" v-on:click="doSendKeys('')">Send Keys</button>
               <button class="btn btn-default btn-sm" v-on:click="doClear()">Clear Text</button>
             </div>
