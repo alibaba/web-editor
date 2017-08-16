@@ -82,6 +82,7 @@ var app = new Vue({
     codeRunning: false,
     wsBuild: null,
     editor: null,
+    cursor: {},
     nodeSelected: null,
     nodeHovered: null,
     originNodes: [],
@@ -169,28 +170,38 @@ var app = new Vue({
     }
 
     this.loading = true;
-    $.ajax({
-        url: LOCAL_URL + "api/v1/version",
-        type: "GET",
-        //contentType: "application/json; charset=utf-8"
-      })
-      .done(function(ret) {
-        console.log("version", ret.name);
-        if (ret.name !== LOCAL_VERSION) {
-          self.showError("Expect local server version: " + LOCAL_VERSION + " but got " + ret.name + ", Maybe you need upgrade 'weditor'");
-        }
-      })
-      .fail(function(ret) {
-        self.showError("<p>Local server not started, start with</p><pre>$ python -m weditor</pre>");
-      })
-      .always(function() {
-        self.loading = false;
-      })
+    this.checkVersion()
 
     // this.screenRefresh()
     // this.loadLiveScreen();
   },
   methods: {
+    checkVersion: function() {
+      var self = this;
+      $.ajax({
+          url: LOCAL_URL + "api/v1/version",
+          type: "GET",
+          //contentType: "application/json; charset=utf-8"
+        })
+        .done(function(ret) {
+          console.log("version", ret.name);
+          if (ret.name !== LOCAL_VERSION) {
+            self.showError("Expect local server version: " + LOCAL_VERSION + " but got " + ret.name + ", Maybe you need upgrade 'weditor'");
+            return
+          }
+          if (ret.lastScreenshot) {
+            var blob = b64toBlob(ret.lastScreenshot.data, 'image/' + ret.lastScreenshot.type);
+            self.drawBlobImageToScreen(blob);
+            self.canvasStyle.opacity = 1.0;
+          }
+        })
+        .fail(function(ret) {
+          self.showError("<p>Local server not started, start with</p><pre>$ python -m weditor</pre>");
+        })
+        .always(function() {
+          self.loading = false;
+        })
+    },
     keyeventHome: function() {
       var code = 'd.home()'
       if (this.platform == 'Android') {
@@ -730,6 +741,12 @@ var app = new Vue({
           self.loading = false;
         })
     },
+    doPositionTap: function(x, y) {
+      var code = 'd.click(' + x + ', ' + y + ')'
+      this.codeInsert(code);
+      this.codeRun(this.generatePythonCode(code))
+        .then(this.screenDumpUI)
+    },
     drawNode: function(node, color, dashed) {
       if (!node) {
         return;
@@ -835,8 +852,6 @@ var app = new Vue({
         }
         e.preventDefault()
 
-        var x = e.pageX - screen.bounds.x
-        var y = e.pageY - screen.bounds.y
         var pressure = 0.5
         activeFinger(0, e.pageX, e.pageY, pressure);
         // that.touchMove(0, x / screen.bounds.w, y / screen.bounds.h, pressure);
@@ -853,7 +868,15 @@ var app = new Vue({
         }
         e.preventDefault()
 
-        // that.touchUp(0);
+        var pos = coord(e);
+        // change precision
+        pos.px = Math.floor(pos.px * 1000) / 1000;
+        pos.py = Math.floor(pos.py * 1000) / 1000;
+        pos.x = pos.px * element.width;
+        pos.y = pos.py * element.height;
+        self.cursor = pos;
+        markPosition(self.cursor)
+
         stopMousing()
       }
 
@@ -906,9 +929,13 @@ var app = new Vue({
         calculateBounds()
         var x = e.pageX - screen.bounds.x
         var y = e.pageY - screen.bounds.y
+        var px = x / screen.bounds.w;
+        var py = y / screen.bounds.h;
         return {
-          x: Math.floor(x / screen.bounds.w * element.width),
-          y: Math.floor(y / screen.bounds.h * element.height),
+          px: px,
+          py: py,
+          x: Math.floor(px * element.width),
+          y: Math.floor(py * element.height),
         }
       }
 
@@ -933,6 +960,24 @@ var app = new Vue({
         if (self.nodeSelected) {
           self.drawNode(self.nodeSelected, "red");
         }
+        if (self.cursor.px) {
+          markPosition(self.cursor)
+        }
+      }
+
+      function markPosition(pos) {
+        var ctx = self.canvas.fg.getContext("2d");
+        ctx.fillStyle = '#ff0000'; // red
+        ctx.beginPath()
+        ctx.arc(pos.x, pos.y, 12, 0, 2 * Math.PI)
+        ctx.closePath()
+        ctx.fill()
+
+        ctx.fillStyle = "#fff"; // white
+        ctx.beginPath()
+        ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI)
+        ctx.closePath()
+        ctx.fill();
       }
 
       /* bind listeners */

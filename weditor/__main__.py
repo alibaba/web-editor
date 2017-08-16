@@ -109,12 +109,16 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class VersionHandler(BaseHandler):
     def get(self):
-        self.write({
+        ret = {
             'name': __version__,
-        })
+        }
+        ret['lastScreenshot'] = DeviceScreenshotHandler.last_screenshot_response
+        self.write(ret)
 
 
 class DeviceScreenshotHandler(BaseHandler):
+    last_screenshot_response = None
+
     def get(self, serial):
         print("SN", serial)
         try:
@@ -122,14 +126,13 @@ class DeviceScreenshotHandler(BaseHandler):
             buffer = BytesIO()
             d.screenshot().convert("RGB").save(buffer, format='JPEG')
             b64data = base64.b64encode(buffer.getvalue())
-            # with open('bg.jpg', 'rb') as f:
-
-            # b64data = base64.b64encode(f.read())
-            self.write({
+            
+            response = DeviceScreenshotHandler.last_screenshot_response = {
                 "type": "jpeg",
                 "encoding": "base64",
                 "data": b64data.decode('utf-8'),
-            })
+            }
+            self.write(response)
         except EnvironmentError as e:
             traceback.print_exc()
             self.set_status(430, "Environment Error")

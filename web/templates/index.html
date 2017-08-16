@@ -318,6 +318,10 @@
                 <td>XPath(beta)</td>
                 <td v-text="elemXpath"></td>
               </tr>
+              <tr>
+                <td>Position</td>
+                <td>{{!cursor.px}}, {{!cursor.py}} <a href="#" @click="doPositionTap(cursor.px, cursor.py)">点击</a></td>
+              </tr>
             </tbody>
           </table>
           <div class="panel-body">
