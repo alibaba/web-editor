@@ -187,6 +187,14 @@
     word-wrap: break-word;
     table-layout: fixed;
   }
+  
+  i.inactive {
+    opacity: 0.5;
+  }
+  
+  .cursor-pointer {
+    cursor: pointer;
+  }
 </style>
 
 <body>
@@ -319,8 +327,14 @@
                 <td v-text="elemXpath"></td>
               </tr>
               <tr>
-                <td>Position</td>
-                <td>{{!cursor.px}}, {{!cursor.py}} <a href="#" @click="doPositionTap(cursor.px, cursor.py)">点击</a></td>
+                <td>Position
+                  <i @click="showCursorPercent = !showCursorPercent" :class="{'inactive': showCursorPercent}" class="fa fa-percent cursor-pointer" aria-hidden="true"></i>
+                </td>
+                <td>
+                  <span title="双击复制" @dblclick="copyToClipboard('('+cursorValue.x+', '+cursorValue.y+')')">
+                    ({{!cursorValue.x}}, {{!cursorValue.y}})
+                  </span>
+                  <a href="#" @click="doPositionTap(cursorValue.x, cursorValue.y)">点击</a></td>
               </tr>
             </tbody>
           </table>
@@ -397,6 +411,7 @@
 <script src="/static/ace/ace.js"></script>
 <script src="/static/ace/mode-python.js"></script>
 <!-- <script src="http://10.240.187.174:8000/_d/js"></script> -->
+<script src="{{static_url('js/common.js')}}"></script>
 <script src="{{static_url('js/index.js')}}"></script>
 <script>
   (function(i, s, o, g, r, a, m) {

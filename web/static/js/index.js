@@ -1,51 +1,6 @@
 window.LOCAL_URL = 'http://localhost:17310/';
 window.LOCAL_VERSION = '0.0.2'
 
-/* Image Pool */
-function ImagePool(size) {
-  this.size = size
-  this.images = []
-  this.counter = 0
-}
-
-ImagePool.prototype.next = function() {
-  if (this.images.length < this.size) {
-    var image = new Image()
-    this.images.push(image)
-    return image
-  } else {
-    if (this.counter >= this.size) {
-      // Reset for unlikely but theoretically possible overflow.
-      this.counter = 0
-    }
-  }
-
-  return this.images[this.counter++ % this.size]
-}
-
-function b64toBlob(b64Data, contentType, sliceSize) {
-  contentType = contentType || '';
-  sliceSize = sliceSize || 512;
-
-  var byteCharacters = atob(b64Data);
-  var byteArrays = [];
-
-  for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-    var slice = byteCharacters.slice(offset, offset + sliceSize);
-
-    var byteNumbers = new Array(slice.length);
-    for (var i = 0; i < slice.length; i++) {
-      byteNumbers[i] = slice.charCodeAt(i);
-    }
-
-    var byteArray = new Uint8Array(byteNumbers);
-    byteArrays.push(byteArray);
-  }
-
-  return new Blob(byteArrays, {
-    type: contentType
-  });
-}
 
 var app = new Vue({
   el: '#app',
@@ -83,6 +38,7 @@ var app = new Vue({
     wsBuild: null,
     editor: null,
     cursor: {},
+    showCursorPercent: true,
     nodeSelected: null,
     nodeHovered: null,
     originNodes: [],
@@ -109,6 +65,13 @@ var app = new Vue({
     },
   },
   computed: {
+    cursorValue: function() {
+      if (this.showCursorPercent) {
+        return { x: this.cursor.px, y: this.cursor.py }
+      } else {
+        return this.cursor
+      }
+    },
     nodes: function() {
       return this.originNodes
     },
@@ -872,8 +835,8 @@ var app = new Vue({
         // change precision
         pos.px = Math.floor(pos.px * 1000) / 1000;
         pos.py = Math.floor(pos.py * 1000) / 1000;
-        pos.x = pos.px * element.width;
-        pos.y = pos.py * element.height;
+        pos.x = Math.floor(pos.px * element.width);
+        pos.y = Math.floor(pos.py * element.height);
         self.cursor = pos;
         markPosition(self.cursor)
 
