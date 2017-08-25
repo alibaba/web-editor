@@ -637,7 +637,7 @@ var app = new Vue({
       if (!text) {
         return;
       }
-      var params = ['"' + text + '"', 'enter=True']
+      var params = ['"' + text + '"']
       if (this.nodeSelected) {
         params = params.concat(this.generateNodeSelectorParams(this.nodeSelected))
       }
