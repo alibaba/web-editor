@@ -7,6 +7,10 @@
   color: red;
 }
 
+.color-green {
+  color: green;
+}
+
 html,
 body {
   height: 100%;

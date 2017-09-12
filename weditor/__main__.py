@@ -238,18 +238,26 @@ class DeviceConnectHandler(BaseHandler):
         platform = self.get_argument("platform").lower()
         device_url = self.get_argument("deviceUrl")
         id = str(uuid.uuid4())
-        if platform in ['android', 'ios']:
-            import atx
-            d = atx.connect(device_url)
-            cached_devices[id] = d
+        try:
+            if platform in ['android', 'ios']:
+                import atx
+                d = atx.connect(device_url)
+                cached_devices[id] = d
+            else:
+                import neco
+                d = neco.connect(device_url or 'localhost')
+                cached_devices[id] = d
+        except Exception as e:
+            self.set_status(430, "Connect Error")
+            self.write({
+                "success": False,
+                "description": str(e)
+            })
         else:
-            import neco
-            d = neco.connect(device_url or 'localhost')
-            cached_devices[id] = d
-        self.write({
-            "deviceId": id,
-            'success': True,
-        })
+            self.write({
+                "deviceId": id,
+                'success': True,
+            })
 
 
 class DeviceHierarchyHandler(BaseHandler):

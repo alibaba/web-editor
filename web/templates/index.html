@@ -41,7 +41,9 @@
             </select>
             <input type="text" v-model="serial" class="form-control" v-bind:placeholder="deviceUrl">
           </div>
-          <button type="submit" class="btn btn-default" v-on:click="doConnect">Connect</button>
+          <button type="submit" class="btn btn-default" v-on:click="doConnect">
+            Connect <span v-if="deviceId" class="glyphicon glyphicon-grain color-green"></span>
+          </button>
         </form>
       </div>
     </nav>

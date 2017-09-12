@@ -150,8 +150,8 @@ var app = new Vue({
         })
     },
     doConnect: function() {
-      console.log(this.platform)
-      console.log(this.deviceUrl)
+      var lastDeviceId = this.deviceId;
+      this.deviceId = '';
       $.ajax({
           url: LOCAL_URL + "api/v1/connect",
           method: 'POST',
@@ -163,6 +163,10 @@ var app = new Vue({
         .then(function(ret) {
           console.log(ret)
           this.deviceId = ret.deviceId
+        }.bind(this))
+        .fail(function(ret) {
+          this.showError(ret.responseJSON.description);
+          this.deviceId = lastDeviceId;
         }.bind(this))
     },
     keyeventHome: function() {
