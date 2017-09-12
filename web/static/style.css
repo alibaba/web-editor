@@ -1,0 +1,200 @@
+* {
+  margin: 0px;
+  padding: 0px;
+}
+
+.color-red {
+  color: red;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
+  /*display: flex;*/
+}
+
+.finger {
+  position: absolute;
+  border-style: solid;
+  border-radius: 50%;
+  border-color: white;
+  border-width: 0mm;
+  width: 6mm;
+  height: 6mm;
+  top: -3mm;
+  left: -3mm;
+  opacity: 0.7;
+  pointer-events: none;
+  background: white;
+  /*#464646;*/
+  /*background: red;*/
+  display: none;
+}
+
+.finger.active {
+  display: block;
+  border-color: #464646;
+  border-width: 1mm;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#left {
+  /*height: 100%;*/
+  display: flex;
+  flex-direction: column;
+  width: 600px;
+}
+
+div.middle {
+  width: 400px;
+  overflow-y: auto;
+  display: flex;
+}
+
+.middle-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-bottom: 0px;
+}
+
+.editor-container {
+  position: relative;
+  min-height: 100px;
+  padding: 0px;
+  margin: 0px;
+  flex: 1;
+}
+
+#right {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  /*border: 1px solid red;*/
+  /*position: relative;*/
+}
+
+section {
+  /*border: 1px solid red;*/
+}
+
+#screen {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  background-color: gray;
+}
+
+#footer {
+  height: 50px;
+  display: flex;
+  justify-content: space-around;
+}
+
+#footer>button {
+  flex: 1;
+}
+
+.box {
+  position: relative;
+  display: flex;
+  flex: 1;
+}
+
+#editor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+#console {
+  height: 150px;
+  /*border: 1px solid green;*/
+  background-color: #eee;
+  word-break: break-all;
+  padding: 0px;
+  position: relative;
+  background-color: #f5f5f5;
+  overflow: auto;
+}
+
+#console>pre {
+  font-family: "Courier New";
+  font-size: 13px;
+  padding: 2px 5px;
+  /*height: 100%;*/
+  border: 0px;
+}
+
+#console>img {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+
+#upper {
+  width: 100%;
+  display: flex;
+  flex: 1;
+  border-top: 1px solid black;
+}
+
+#toolbar {
+  border: 1px solid green;
+}
+
+.vertical-gap {
+  width: 5px;
+  background-color: #444444;
+}
+
+.vertical-gap:hover {
+  cursor: col-resize;
+  background-color: black;
+}
+
+.horizon-gap {
+  height: 5px;
+  background-color: #444444;
+}
+
+.horizon-gap:hover {
+  cursor: row-resize;
+  background-color: black;
+}
+
+.canvas-fg {
+  z-index: 1;
+  position: absolute;
+}
+
+.canvas-bg {
+  z-index: 0;
+  position: absolute;
+}
+
+.table-weditor {
+  word-wrap: break-word;
+  table-layout: fixed;
+}
+
+i.inactive {
+  opacity: 0.5;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}

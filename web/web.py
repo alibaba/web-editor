@@ -28,6 +28,19 @@ def make_app(**settings):
         (r"/", MainHandler),
     ], **settings)
 
+is_closing = False
+
+def signal_handler(signum, frame):
+    global is_closing
+    print('exiting...')
+    is_closing = True
+
+def try_exit(): 
+    global is_closing
+    if is_closing: # clean up here
+        tornado.ioloop.IOLoop.instance().stop()
+        print('exit success')
+
 
 if __name__ == '__main__':
     options.parse_command_line()
@@ -35,8 +48,6 @@ if __name__ == '__main__':
     http_server = tornado.httpserver.HTTPServer(app, xheaders=True)
     http_server.listen(options.port)
     print("Listen on port {}".format(options.port))
-    try:
-        tornado.ioloop.IOLoop.current().start()
-    except KeyboardInterrupt:
-        print("Try to stop server")
-        tornado.ioloop.IOLoop.instance().stop()
+    
+    tornado.ioloop.PeriodicCallback(try_exit, 100).start() 
+    tornado.ioloop.IOLoop.current().start()

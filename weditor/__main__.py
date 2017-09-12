@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
+import sys
 import platform
 import time
 import json
@@ -14,6 +15,8 @@ import signal
 import base64
 import webbrowser
 import traceback
+import uuid
+import StringIO
 from io import BytesIO
 
 import six
@@ -22,10 +25,16 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 import tornado.escape
+from tornado import gen
 from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
 from tornado.concurrent import run_on_executor
 from concurrent.futures import ThreadPoolExecutor   # `pip install futures` for python2
+
+try:
+    import Queue as queue
+except:
+    import queue
 
 try:
     import subprocess32 as subprocess
@@ -37,7 +46,7 @@ except:
 from weditor import uidumplib
 
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 try:
     enable_pretty_logging()
@@ -45,7 +54,8 @@ except:
     pass
 
 __dir__ = os.path.dirname(os.path.abspath(__file__))
-__devices = {}
+cached_devices = {}
+gqueue = queue.Queue()
 
 
 def tostr(s, encoding='utf-8'):
@@ -56,8 +66,9 @@ def tostr(s, encoding='utf-8'):
     return s
 
 
-def get_device(serial):
-    return atx.connect(None if serial == 'default' else serial)
+def get_device(id):
+    return cached_devices.get(id)
+    # return atx.connect(None if serial in ['-', 'default'] else serial)
     # d = __devices.get(serial)
     # if d:
     #     return d
@@ -112,13 +123,10 @@ class VersionHandler(BaseHandler):
         ret = {
             'name': __version__,
         }
-        ret['lastScreenshot'] = DeviceScreenshotHandler.last_screenshot_response
         self.write(ret)
 
 
 class DeviceScreenshotHandler(BaseHandler):
-    last_screenshot_response = None
-
     def get(self, serial):
         print("SN", serial)
         try:
@@ -126,8 +134,7 @@ class DeviceScreenshotHandler(BaseHandler):
             buffer = BytesIO()
             d.screenshot().convert("RGB").save(buffer, format='JPEG')
             b64data = base64.b64encode(buffer.getvalue())
-            
-            response = DeviceScreenshotHandler.last_screenshot_response = {
+            response = {
                 "type": "jpeg",
                 "encoding": "base64",
                 "data": b64data.decode('utf-8'),
@@ -141,118 +148,6 @@ class DeviceScreenshotHandler(BaseHandler):
             })
 
 
-class FileHandler(BaseHandler):
-    def get_file(self, path):
-        _real = virt2real(path)
-        self.write({
-            'type': 'file',
-            'size': os.path.getsize(_real),
-            'name': os.path.basename(path),
-            'path': path,
-            'content': read_file_content(_real),
-            'sha': sha_file(_real),
-        })
-
-    def get_dir(self, path):
-        _real = virt2real(path)
-        files = os.listdir(_real) # TODO
-        rets = []
-        for name in files:
-            _path = os.path.join(_real, name)
-            if os.path.isfile(name):
-                rets.append({
-                    'type': 'file',
-                    'name': name,
-                    'path': os.path.join(path, name),
-                    'size': os.path.getsize(_path),
-                    'sha': sha_file(_path),
-                })
-            else:
-                rets.append({
-                    'type': 'dir',
-                    'size': 0,
-                    'name': name,
-                    'path': _path,
-                })
-        self.set_header('Content-Type', 'application/json; charset=UTF-8')
-        self.write(json_encode(rets))
-
-    def get(self, path):
-        _real = virt2real(path)
-        if os.path.isfile(_real):
-            self.get_file(path)
-        elif os.path.isdir(_real):
-            self.get_dir(path)
-        else:
-            self.set_status(404)
-            self.write({
-                'description': 'file not exists'
-            })
-
-    def put(self, path):
-        data = tornado.escape.json_decode(self.request.body)
-        content = data.get('content')
-        _real = virt2real(path)
-        _dir = os.path.dirname(_real)
-        if not os.path.isdir(_dir):
-            os.makedirs(_dir)
-        if os.path.isfile(_real):
-            sha = sha_file(_real)
-            if sha != data.get('sha'):
-                self.set_status(422, 'Unprocessable Entity')
-                self.write({
-                    'description': 'file sha not match',
-                })
-                return
-            write_file_content(_real, content)
-            self.set_status(200)
-        else:
-            write_file_content(_real, content)
-            self.set_status(201)
-        self.write({
-            'content': {
-                'type': 'file',
-                'name': os.path.basename(path),
-                'path': path,
-                'sha': sha_file(_real),
-                'size': len(content),
-            }
-        })  
-
-    def post(self, path):
-        pass
-
-    def delete(self, path):
-        _real = virt2real(path)
-        data = tornado.escape.json_decode(self.request.body)
-        if not os.path.isfile(_real):
-            self.set_status(404)
-            self.write({
-                'description': 'file not exists'
-            })
-            return
-        # check sha
-        sha = sha_file(_real)
-        if not data or data.get('sha') != sha:
-            self.set_status(422, 'Unprocessable Entity')
-            self.write({
-                'description': 'file sha not match'
-            })
-            return
-        # delete file
-        try:
-            os.remove(_real)
-            self.write({
-                'content': None,
-                'description': 'successfully deleted file',
-            })
-        except (IOError, WindowsError) as e:
-            self.set_status(500)
-            self.write({
-                'description': 'file deleted error: {}'.format(e),
-            })
-
-
 class MainHandler(BaseHandler):
     def get(self):
         self.write("Hello")
@@ -260,21 +155,6 @@ class MainHandler(BaseHandler):
 
     def post(self):
         self.write("Good")
-
-
-class DeviceUIViewHandler(BaseHandler):
-    def get(self, serial):
-        try:
-            d = get_device(serial)
-            self.write({
-                'nodes': uidumplib.get_uiview(d)
-            })
-        except EnvironmentError as e:
-            traceback.print_exc()
-            self.set_status(430, "Environment Error")
-            self.write({
-                "description": str(e)
-            })
 
 
 class BuildWSHandler(tornado.websocket.WebSocketHandler):
@@ -289,39 +169,41 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
         return True
 
     @run_on_executor
-    @tornado.gen.coroutine
     def _run(self, device_url, code):
+        """
+        Thanks: https://gist.github.com/mosquito/e638dded87291d313717
+        """
         try:
-            print("DEBUG: run code", code)
-            # read, write = os.pipe()
-            # os.write(write, code)
-            # os.close(write)
+
+            print("DEBUG: run code\n%s" % code)
             env = os.environ.copy()
             env['UIAUTOMATOR_DEBUG'] = 'true'
             if device_url and device_url != 'default':
                 env['ATX_CONNECT_URL'] = tostr(device_url)
             start_time = time.time()
-            self.proc = subprocess.Popen(["python", "-u"],
-                env=env, stdout=PIPE, stderr=subprocess.STDOUT, stdin=PIPE, bufsize=1)
+
+            self.proc = subprocess.Popen([sys.executable, "-u"],
+                env=env, stdout=PIPE, stderr=subprocess.STDOUT, stdin=PIPE)
             self.proc.stdin.write(code)
             self.proc.stdin.close()
+
             for line in iter(self.proc.stdout.readline, b''):
                 print("recv subprocess:", repr(line))
                 if line is None:
                     break
-                self.write_message({"buffer": line.decode('utf-8')})
+                gqueue.put((self, {"buffer": line.decode('utf-8')}))
+            print("Wait exit")
             exit_code = self.proc.wait()
             duration = time.time() - start_time
-            self.write_message({
+            ret = {
                 "buffer": "",
                 "result": {"exitCode": exit_code, "duration": int(duration)*1000}
-            })
-            self.close()
+            }
+            gqueue.put((self, ret))
+            time.sleep(3) # wait until write done
         except Exception:
             traceback.print_exc()
 
-    # oper: "stop"
-    # code: "print ('hello')"
     @tornado.gen.coroutine
     def on_message(self, message):
         jdata = json.loads(message)
@@ -329,6 +211,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             code = jdata['content']
             device_url = jdata.get('deviceUrl')
             yield self._run(device_url, code.encode('utf-8'))
+            self.close()
         else:
             try:
                 self.proc.terminate()
@@ -350,15 +233,63 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
         print("Websocket closed")
 
 
+class DeviceConnectHandler(BaseHandler):
+    def post(self):
+        platform = self.get_argument("platform").lower()
+        device_url = self.get_argument("deviceUrl")
+        id = str(uuid.uuid4())
+        if platform in ['android', 'ios']:
+            import atx
+            d = atx.connect(device_url)
+            cached_devices[id] = d
+        else:
+            import neco
+            d = neco.connect(device_url or 'localhost')
+            cached_devices[id] = d
+        self.write({
+            "deviceId": id,
+            'success': True,
+        })
+
+
+class DeviceHierarchyHandler(BaseHandler):
+    def get(self, device_id):
+        d = get_device(device_id)
+        if d.platform == 'ios':
+            self.write(uidumplib.get_ios_hierarchy(d))
+        elif d.platform == 'android':
+            self.write(uidumplib.get_android_hierarchy(d))
+        elif d.platform == 'neco':
+            self.write(d.dump_hierarchy())
+        else:
+            self.write("Unknown platform")
+
+
+class DeviceCodeDebugHandler(BaseHandler):
+    def post(self, device_id):
+        d = get_device(device_id)
+        code = self.get_argument('code')
+        start = time.time()
+        buffer = StringIO.StringIO()
+        sys.stdout = buffer
+        try:
+            exec(code, {'d': d})
+        finally:
+            sys.stdout = sys.__stdout__
+        self.write({
+            "success": True,
+            "duration": int((time.time()-start)*1000),
+            "content": buffer.getvalue(),
+        })
+
 def make_app(settings={}):
-    # REST API REFERENCE
-    # https://developer.github.com/v3/repos/contents/
     application = tornado.web.Application([
         (r"/", MainHandler),
         (r"/api/v1/version", VersionHandler),
-        (r"/api/v1/contents/([^/]*)", FileHandler),
+        (r"/api/v1/connect", DeviceConnectHandler),
         (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
-        (r"/api/v1/devices/([^/]+)/uiview", DeviceUIViewHandler),
+        (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
+        (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
         (r"/ws/v1/build", BuildWSHandler),
     ], **settings)
     return application
@@ -372,10 +303,23 @@ def signal_handler(signum, frame):
 
 def try_exit(): 
     global is_closing
-    if is_closing:
-        # clean up here
+    if is_closing: # clean up here
         tornado.ioloop.IOLoop.instance().stop()
         print('exit success')
+
+
+@gen.coroutine
+def consume_queue():
+    # print("Consume task queue")
+    while True:
+        try:
+            (wself, value) = gqueue.get_nowait()
+            wself.write_message(value)
+        except queue.Empty:
+            yield gen.sleep(.2)
+        except Exception as e:
+            print("Error in consume: " + str(e))
+            yield gen.sleep(.5)
 
 
 def run_web(debug=False):
@@ -389,6 +333,7 @@ def run_web(debug=False):
     signal.signal(signal.SIGINT, signal_handler)
     application.listen(port)
     tornado.ioloop.PeriodicCallback(try_exit, 100).start() 
+    tornado.ioloop.IOLoop.instance().add_callback(consume_queue)
     tornado.ioloop.IOLoop.instance().start()
 
 

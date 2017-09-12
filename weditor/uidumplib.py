@@ -2,6 +2,8 @@
 
 import re
 import xml.dom.minidom
+import uuid
+
 
 sample_android_page_xml = '''<?xml version="1.0" ?>
 <hierarchy rotation="0">
@@ -29,7 +31,8 @@ def parse_bounds(text):
     m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', text)
     if m is None:
         return None
-    return m.groups()
+    (lx, ly, rx, ry) = map(int, m.groups())
+    return dict(x=lx, y=ly, width=rx-lx, height=ry-ly)
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -46,11 +49,12 @@ __alias = {
     'resource-id': 'resourceId',
     'content-desc': 'description',
     'long-clickable': 'longClickable',
+    'bounds': 'rect',
 }
 
 __parsers = {
     # Android
-    'bounds': parse_bounds,
+    'rect': parse_bounds,
     'text': convstr,
     'className': convstr,
     'resourceId': convstr,
@@ -76,7 +80,7 @@ __parsers = {
     'enabled': str2bool,
 }
 
-def parse_node(node):
+def parse_uiautomator_node(node):
     ks = {}
     for key, value in node.attributes.items():
         key = __alias.get(key, key)
@@ -85,52 +89,52 @@ def parse_node(node):
             ks[key] = None
         elif f:
             ks[key] = f(value)
+    if 'bounds' in ks:
+        lx, ly, rx, ry = map(int, ks.pop('bounds'))
+        ks['rect'] = dict(x=lx, y=ly, width=rx-lx, height=ry-ly)
     return ks
 
-def node2json(node, scale):
-    ret = {}
-    for (k, v) in node.attributes.items():
-        ret[k] = v
-    x, y, w, h = map(int, (ret['x'], ret['y'], ret['width'], ret['height']))
-    ret['bounds'] = map(lambda x: x*scale, [x, y, x+w, y+h])
-    ret['className'] = ret['type'][len('XCUIElementType'):]
-    return ret
 
-def travel_dom(root, scale, result=[]):
-    # print root.nodeName
-    for node in root.childNodes:
-        if not node.nodeName.startswith('XCUIElementType'):
-            continue
-        result.append(node2json(node, scale))
-        travel_dom(node, scale, result)
-    return result
-
-        
-def get_uiview(d):
-    is_android = d.platform == 'android'
-    if is_android:
-        page_xml = d.dump(compressed=False, pretty=False).encode('utf-8')
-    else:
-        page_xml = d.source().encode('utf-8')
-
-    # page_xml = sample_android_page_xml
-    with open('debug.xml', 'wb') as f:
-        f.write(page_xml)
-        
+def get_android_hierarchy(d):
+    """
+    Returns:
+        JSON object
+    """
+    page_xml = d.dump(compressed=False, pretty=False).encode('utf-8')
     dom = xml.dom.minidom.parseString(page_xml)
     root = dom.documentElement
 
-    ui_nodes = []
-    if is_android:
-        nodes = root.getElementsByTagName('node')
-        n = 0
-        for node in nodes:
-            json_node = parse_node(node)
-            json_node['id'] = n
-            n += 1
-            ui_nodes.append(json_node)
-    else:
-        ui_nodes = travel_dom(root, d.scale, [])
-        for (idx, un) in enumerate(ui_nodes):
-            un['id'] = idx
-    return ui_nodes
+    def travel(node):
+        # print(node)
+        if node.attributes is None:
+            return
+        json_node = parse_uiautomator_node(node)
+        json_node['id'] = str(uuid.uuid4())
+        if node.childNodes:
+            children = []
+            for n in node.childNodes:
+                sub_hierarchy = travel(n)
+                if sub_hierarchy:
+                    children.append(sub_hierarchy)
+            json_node['children'] = children
+        return json_node
+
+    return travel(root)
+
+
+def get_ios_hierarchy(d):
+    sourcejson = d._wda.source(format='json')
+    def travel(node):
+        node['id'] = str(uuid.uuid4())
+        if node.get('rect'):
+            rect = node['rect']
+            nrect = {}
+            for k, v in rect.items():
+                nrect[k] = v*d.scale
+            node['rect'] = nrect
+            
+        for child in node.get('children', []):
+            travel(child)
+        return node
+
+    return travel(sourcejson)

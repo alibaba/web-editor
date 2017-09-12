@@ -1,39 +1,15 @@
 window.LOCAL_URL = 'http://localhost:17310/';
-window.LOCAL_VERSION = '0.0.2'
+window.LOCAL_VERSION = '0.0.3'
 
 
 var app = new Vue({
   el: '#app',
   data: {
-    fs: {
-      folder: {
-        current: '/',
-        items: [{
-          path: '/',
-        }, {
-          path: '/images',
-        }]
-      },
-      file: {
-        name: '',
-        path: '',
-        sha: '',
-        changed: false,
-      },
-      fileSelected: '',
-      files: [{
-        name: 'hello.txt',
-        path: 'notes/hello.txt',
-      }, {
-        name: 'world.py',
-        path: 'notes/world.py'
-      }],
-    },
+    deviceId: '',
     console: {
       content: '',
     },
     error: '',
-    debugCode: '',
     codeRunning: false,
     wsBuild: null,
     editor: null,
@@ -41,6 +17,7 @@ var app = new Vue({
     showCursorPercent: true,
     nodeSelected: null,
     nodeHovered: null,
+    originNodeMaps: {},
     originNodes: [],
     platform: 'Android',
     serial: '',
@@ -87,7 +64,7 @@ var app = new Vue({
     },
     deviceUrl: function() {
       if (this.platform == 'Android' && this.serial == '') {
-        return 'default';
+        return '';
       }
       if (this.platform == 'iOS' && this.serial == '') {
         return 'http://localhost:8100';
@@ -113,7 +90,10 @@ var app = new Vue({
       self.resizeScreen();
     })
 
+    // initial select platform
     $('.selectpicker').selectpicker('val', this.platform);
+
+    this.initJstree();
 
     var editor = this.editor = ace.edit("editor");
     editor.resize()
@@ -122,10 +102,6 @@ var app = new Vue({
     this.initDragDealer();
 
     this.activeMouseControl();
-    this.fileLoad()
-      .fail(function() {
-        self.editor.insert("# coding: utf-8\n\nimport atx\nd = atx.connect()")
-      })
 
     function setError(msg) {
       self.error = msg;
@@ -152,9 +128,17 @@ var app = new Vue({
             self.showError("Expect local server version: " + LOCAL_VERSION + " but got " + ret.name + ", Maybe you need upgrade 'weditor'");
             return
           }
-          if (ret.lastScreenshot) {
-            var blob = b64toBlob(ret.lastScreenshot.data, 'image/' + ret.lastScreenshot.type);
+          var lastScreenshotBase64 = localStorage.screenshotBase64;
+          if (lastScreenshotBase64) {
+            var blob = b64toBlob(lastScreenshotBase64, 'image/jpeg');
             self.drawBlobImageToScreen(blob);
+            self.canvasStyle.opacity = 1.0;
+          }
+          if (localStorage.windowHierarchy) {
+            // self.originNodes = JSON.parse(localStorage.windowHierarchy);
+            var source = JSON.parse(localStorage.windowHierarchy);
+            self.drawAllNodeFromSource(source);
+            self.loading = false;
             self.canvasStyle.opacity = 1.0;
           }
         })
@@ -164,6 +148,22 @@ var app = new Vue({
         .always(function() {
           self.loading = false;
         })
+    },
+    doConnect: function() {
+      console.log(this.platform)
+      console.log(this.deviceUrl)
+      $.ajax({
+          url: LOCAL_URL + "api/v1/connect",
+          method: 'POST',
+          data: {
+            platform: this.platform,
+            deviceUrl: this.deviceUrl,
+          },
+        })
+        .then(function(ret) {
+          console.log(ret)
+          this.deviceId = ret.deviceId
+        }.bind(this))
     },
     keyeventHome: function() {
       var code = 'd.home()'
@@ -176,8 +176,46 @@ var app = new Vue({
         }.bind(this))
         .then(this.screenRefresh)
     },
-    loadCurrentFile: function() {
-      this.fileLoad(this.fs.file.path)
+    sourceToJstree: function(source) {
+      var n = {}
+      n.id = source.id;
+      n.text = source.type || source.className
+      if (source.name) {
+        n.text += " - " + source.name;
+      }
+      if (source.resourceId) {
+        n.text += " - " + source.resourceId;
+      }
+      n.icon = this.sourceTypeIcon(source.type);
+      if (source.children) {
+        n.children = []
+        source.children.forEach(function(s) {
+          n.children.push(this.sourceToJstree(s))
+        }.bind(this))
+      }
+      return n;
+    },
+    sourceTypeIcon: function(widgetType) {
+      switch (widgetType) {
+        case "Scene":
+          return "glyphicon glyphicon-tree-conifer"
+        case "Layer":
+          return "glyphicon glyphicon-equalizer"
+        case "Camera":
+          return "glyphicon glyphicon-facetime-video"
+        case "Node":
+          return "glyphicon glyphicon-leaf"
+        case "ImageView":
+          return "glyphicon glyphicon-picture"
+        case "Button":
+          return "glyphicon glyphicon-inbox"
+        case "Layout":
+          return "glyphicon glyphicon-tasks"
+        case "Text":
+          return "glyphicon glyphicon-text-size"
+        default:
+          return "glyphicon glyphicon-object-align-horizontal"
+      }
     },
     showError: function(error) {
       this.loading = false;
@@ -191,11 +229,52 @@ var app = new Vue({
         this.showError("<p>Local server not started, start with</p><pre>$ python -m weditor</pre>");
       }
     },
+    initJstree: function() {
+      var $jstree = $("#jstree-hierarchy");
+      this.$jstree = $jstree;
+      var self = this;
+      $jstree.jstree({
+          plugins: ["search"],
+          core: {
+            multiple: false,
+            themes: {
+              "variant": "small"
+            },
+            data: []
+          }
+        })
+        .on('ready.jstree refresh.jstree', function() {
+          $jstree.jstree("open_all");
+        })
+        .on("changed.jstree", function(e, data) {
+          console.log("The selected nodes are:");
+          console.log(data.selected);
+          var id = data.selected[0];
+          var node = self.originNodeMaps[id];
+          if (node) {
+            self.nodeSelected = node;
+            self.drawAllNode();
+            self.drawNode(node, "red");
+          }
+        })
+        .on("hover_node.jstree", function(e, data) {
+          var node = self.originNodeMaps[data.node.id];
+          if (node) {
+            self.nodeHovered = node;
+            self.drawRefresh()
+          }
+        })
+        .on("dehover_node.jstree", function() {
+          self.nodeHovered = null;
+          self.drawRefresh()
+        })
+      $("#jstree-search").on('propertychange input', function(e) {
+        var ret = $jstree.jstree(true).search($(this).val());
+      })
+    },
     initDragDealer: function() {
       var self = this;
-
       var updateFunc = null;
-
 
       function dragMoveListener(evt) {
         evt.preventDefault();
@@ -239,126 +318,28 @@ var app = new Vue({
       editor.getSession().setUseWrapMode(true);
 
       editor.commands.addCommands([{
-        name: 'save',
-        bindKey: {
-          win: 'Ctrl-S',
-          mac: 'Command-S'
-        },
-        exec: function(editor) {
-          if (self.fs.file.path) {
-            self.fileSave(self.fs.file);
-          } else {
-            self.fileCreate(editor.getValue());
-          }
-        },
-      }, {
         name: 'build',
         bindKey: {
           win: 'Ctrl-B',
           mac: 'Command-B'
         },
         exec: function(editor) {
-          self.codeRun(editor.getValue())
+          self.codeRunDebugCode()
         },
       }, {
-        name: 'create',
+        name: 'build',
         bindKey: {
-          win: 'Alt-N',
-          mac: 'Alt-N'
+          win: 'Ctrl-Enter',
+          mac: 'Command-Enter'
         },
         exec: function(editor) {
-          self.fileCreate();
+          self.codeRunDebugCode()
         },
       }]);
 
       // editor.setReadOnly(true);
       // editor.setHighlightActiveLine(false);
-
       editor.$blockScrolling = Infinity;
-      editor.on('input', function(e) {
-        self.fs.file.changed = !self.editor.session.getUndoManager().isClean();
-        // self.editor.getValue() !== self.fs.file.content;
-        // self.editor.session.getUndoManager().isClean();
-      })
-
-      // FIXME(ssx): maybe websocket is better  
-      editor.on('focus', function() {
-        if (!self.fs.file.changed) {
-          self.loadCurrentFile();
-        }
-      })
-
-      // Auto save file
-      // setInterval(function() {
-      //   self.fileSave(self.fs.file)
-      // }, 1000)
-    },
-    fileLoad: function(path) {
-      var self = this;
-      path = path || 'main.py';
-      return $.ajax({
-          method: 'GET',
-          url: LOCAL_URL + 'api/v1/contents/' + path,
-          success: function(ret) {
-            self.fs.file.name = ret.name;
-            self.fs.file.sha = ret.sha;
-            self.fs.file.path = ret.path;
-            self.fs.file.content = ret.content;
-            self.fs.file.changed = false;
-            self.editor.setValue(ret.content);
-            self.editor.clearSelection();
-            self.editor.getSession().setUndoManager(new ace.UndoManager())
-          }
-        }).done(function() {
-          this.editor.focus();
-        }.bind(this))
-        .fail(function(ret) {
-          console.log(ret);
-        })
-    },
-    fileSave: function(file) {
-      var self = this;
-      $.ajax({
-        method: 'PUT',
-        url: LOCAL_URL + 'api/v1/contents/' + file.path,
-        data: JSON.stringify({
-          content: self.editor.getValue(),
-          sha: file.sha,
-        }),
-        success: function(ret) {
-          self.editor.session.getUndoManager().markClean()
-          self.fs.file.path = ret.content.path;
-          self.fs.file.changed = !editor.session.getUndoManager().isClean()
-          self.fs.file.sha = ret.content.sha;
-        },
-        error: function(ret) {
-          if (ret.status == 422) {
-            if (confirm("File has changed on disk, Do you want to reload it?")) {
-              self.loadCurrentFile();
-            }
-          }
-        }
-      })
-    },
-    fileCreate: function(code) {
-      var self = this;
-      var filename = window.prompt('Input file name?')
-      if (!filename) {
-        return;
-      }
-      $.ajax({
-          method: 'PUT',
-          url: LOCAL_URL + 'api/v1/contents/' + filename,
-          data: JSON.stringify({
-            content: code || '# coding: utf-8'
-          })
-        })
-        .then(function(ret) {
-          self.fileLoad(ret.content.path);
-        })
-        .fail(function(ret) {
-          alert("File " + filename + " already exists");
-        })
     },
     resizeScreen: function(img) {
       // check if need update
@@ -407,23 +388,22 @@ var app = new Vue({
           self.showAjaxError(ret);
         })
         .then(function() {
-          return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(self.deviceUrl) + '/uiview')
+          return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(self.deviceId || '-') + '/hierarchy')
         })
         .fail(function(ret) {
           self.showAjaxError(ret);
         })
-        .then(function(ret) {
-          self.originNodes = ret.nodes;
-          self.drawAllNode();
-          self.loading = false;
-          self.canvasStyle.opacity = 1.0;
+        .then(function(source) {
+          localStorage.setItem('windowHierarchy', JSON.stringify(source));
+          self.drawAllNodeFromSource(source);
         })
     },
     screenRefresh: function() {
-      return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.deviceUrl) + '/screenshot')
+      return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.deviceId || '-') + '/screenshot')
         .then(function(ret) {
           var blob = b64toBlob(ret.data, 'image/' + ret.type);
           this.drawBlobImageToScreen(blob);
+          localStorage.setItem('screenshotBase64', ret.data);
         }.bind(this))
     },
     drawBlobImageToScreen: function(blob) {
@@ -543,6 +523,24 @@ var app = new Vue({
       ws.onclose = function(ev) {
         console.log("screen websocket closed")
       }
+    },
+    codeRunDebugCode: function() {
+      this.codeRunning = true;
+      return $.ajax({
+          method: 'post',
+          url: LOCAL_URL + 'api/v1/devices/' + this.deviceId + '/exec',
+          data: {
+            code: this.editor.getValue()
+          }
+        })
+        .then(function(ret) {
+          this.console.content = ret.content;
+          this.console.content += '[Finished in ' + ret.duration / 1000 + 's]'
+        }.bind(this))
+        .always(function() {
+          this.codeRunning = false;
+        }.bind(this))
+        // return this.codeRunDebug(codeSample);
     },
     codeRunDebug: function(code) {
       var fullCode = ['# coding: utf-8', 'import atx', 'd = atx.connect()', code].join('\n');
@@ -711,13 +709,13 @@ var app = new Vue({
         .then(this.screenDumpUI)
     },
     drawNode: function(node, color, dashed) {
-      if (!node) {
+      if (!node || !node.rect) {
         return;
       }
-      var x = node.bounds[0],
-        y = node.bounds[1],
-        w = node.bounds[2] - x,
-        h = node.bounds[3] - y;
+      var x = node.rect.x,
+        y = node.rect.y,
+        w = node.rect.width,
+        h = node.rect.height;
       color = color || 'black';
       var ctx = this.canvas.fg.getContext('2d');
       var rectangle = new Path2D();
@@ -732,12 +730,49 @@ var app = new Vue({
       ctx.strokeStyle = color;
       ctx.stroke(rectangle);
     },
+    drawAllNodeFromSource: function(source) {
+      var jstreeData = this.sourceToJstree(source);
+      var jstree = this.$jstree.jstree(true);
+      jstree.settings.core.data = jstreeData;
+      jstree.refresh();
+
+      var nodeMaps = this.originNodeMaps = {}
+
+      function sourceToNodes(source) {
+        var node = Object.assign({}, source, { children: undefined });
+        nodeMaps[node.id] = node;
+        var nodes = [node];
+        if (source.children) {
+          source.children.forEach(function(s) {
+            nodes = nodes.concat(sourceToNodes(s))
+          })
+        }
+        return nodes;
+      }
+      this.originNodes = sourceToNodes(source) //ret.nodes;
+      this.drawAllNode();
+      this.loading = false;
+      this.canvasStyle.opacity = 1.0;
+    },
+    drawRefresh: function() {
+      this.drawAllNode()
+      if (this.nodeHovered) {
+        this.drawNode(this.nodeHovered, "yellow")
+      }
+      if (this.nodeSelected) {
+        this.drawNode(this.nodeSelected, "red")
+      }
+    },
     drawAllNode: function() {
       var self = this;
       var canvas = self.canvas.fg;
       var ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       self.nodes.forEach(function(node) {
+        // ignore some types
+        if (['Layout'].includes(node.type)) {
+          return;
+        }
         self.drawNode(node, 'black', true);
       })
     },
@@ -748,19 +783,24 @@ var app = new Vue({
       var minArea = Infinity;
 
       function isInside(node, x, y) {
-        var lx = node.bounds[0],
-          ly = node.bounds[1],
-          rx = node.bounds[2],
-          ry = node.bounds[3];
+        if (!node.rect) {
+          return false;
+        }
+        var lx = node.rect.x,
+          ly = node.rect.y,
+          rx = node.rect.width + lx,
+          ry = node.rect.height + ly;
         return lx < x && x < rx && ly < y && y < ry;
       }
       var activeNodes = self.nodes.filter(function(node) {
         if (!isInside(node, pos.x, pos.y)) {
           return false;
         }
-        var bs = node.bounds;
-        var area = (bs[2] - bs[0]) * (bs[3] - bs[1]);
-        if (area < minArea) {
+        if (!node.rect) {
+          return false;
+        }
+        var area = node.rect.width * node.rect.height;
+        if (area <= minArea) {
           minArea = area;
           self.nodeHovered = node;
         }
@@ -850,40 +890,6 @@ var app = new Vue({
         deactiveFinger(0);
       }
 
-      function mouseDownListener(event) {
-        var e = event;
-        if (e.originalEvent) {
-          e = e.originalEvent
-        }
-        // Skip secondary click
-        if (e.which === 3) {
-          return
-        }
-        e.preventDefault()
-
-        fakePinch = e.altKey
-        calculateBounds()
-          // startMousing()
-
-        var x = e.pageX - screen.bounds.x
-        var y = e.pageY - screen.bounds.y
-        var pressure = 0.5
-        activeFinger(0, e.pageX, e.pageY, pressure);
-
-        if (self.nodeHovered) {
-          self.nodeSelected = self.nodeHovered;
-          self.drawAllNode()
-            // self.drawHoverNode(pos);
-          self.drawNode(self.nodeSelected, "red");
-          self.debugCode = self.generateNodeSelectorCode(self.nodeSelected);
-        }
-        // self.touchDown(0, x / screen.bounds.w, y / screen.bounds.h, pressure);
-
-        element.removeEventListener('mousemove', mouseHoverListener);
-        element.addEventListener('mousemove', mouseMoveListener);
-        document.addEventListener('mouseup', mouseUpListener);
-      }
-
       function coord(event) {
         var e = event;
         if (e.originalEvent) {
@@ -926,6 +932,48 @@ var app = new Vue({
         if (self.cursor.px) {
           markPosition(self.cursor)
         }
+      }
+
+      function mouseDownListener(event) {
+        var e = event;
+        if (e.originalEvent) {
+          e = e.originalEvent
+        }
+        // Skip secondary click
+        if (e.which === 3) {
+          return
+        }
+        e.preventDefault()
+
+        fakePinch = e.altKey
+        calculateBounds()
+          // startMousing()
+
+        var x = e.pageX - screen.bounds.x
+        var y = e.pageY - screen.bounds.y
+        var pressure = 0.5
+        activeFinger(0, e.pageX, e.pageY, pressure);
+
+        if (self.nodeHovered) {
+          self.nodeSelected = self.nodeHovered;
+          self.drawAllNode()
+            // self.drawHoverNode(pos);
+          self.drawNode(self.nodeSelected, "red");
+          var generatedCode = self.generateNodeSelectorCode(self.nodeSelected);
+          self.editor.setValue(generatedCode);
+
+          console.log(self.nodeHovered.id);
+          self.$jstree.jstree("deselect_all");
+          self.$jstree.jstree("close_all");
+          self.$jstree.jstree("select_node", "#" + self.nodeHovered.id);
+          self.$jstree.jstree(true)._open_to("#" + self.nodeHovered.id);
+          document.getElementById(self.nodeHovered.id).scrollIntoView(false);
+        }
+        // self.touchDown(0, x / screen.bounds.w, y / screen.bounds.h, pressure);
+
+        element.removeEventListener('mousemove', mouseHoverListener);
+        element.addEventListener('mousemove', mouseMoveListener);
+        document.addEventListener('mouseup', mouseUpListener);
       }
 
       function markPosition(pos) {
