@@ -54,7 +54,7 @@ body {
   /*height: 100%;*/
   display: flex;
   flex-direction: column;
-  width: 600px;
+  width: 800px;
 }
 
 div.middle {

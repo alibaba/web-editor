@@ -62,6 +62,11 @@
           <button class="btn" disabled="true">Back</button>
           <button class="btn" disabled="true">Menu</button>
         </section>
+        <div class="horizon-gap"></div>
+        <div id="console">
+          <img v-if="codeRunning && !console.content" src="/static/running.svg">
+          <pre v-text="console.content"></pre>
+        </div>
       </div>
       <div id="vertical-gap1" class="handle vertical-gap"></div>
 
@@ -183,8 +188,16 @@
             </tbody>
             <tfoot></tfoot>
           </table>
-          <h5>Code</h5>
+          <h5>
+            Code
+          </h5>
           <!-- c9-ide -->
+          <input type="text" v-model="generatedCode" class="form-control input-sm">
+          <div class="checkbox">
+            <label>
+              <input v-model="autoCopy" type="checkbox"> 自动复制代码
+            </label>
+          </div>
           <pre class="editor-container">
             <div id="editor"></div>
           </pre>
@@ -217,11 +230,7 @@
         </div>
       </div>
     </div>
-    <div class="horizon-gap"></div>
-    <div id="console">
-      <img v-if="codeRunning && !console.content" src="/static/running.svg">
-      <pre v-text="console.content"></pre>
-    </div>
+
     <!-- alert and dialogs -->
     <div class="modal" tabindex="-1" role="dialog">
       <div class="modal-dialog" role="document">
@@ -233,7 +242,7 @@
             <h4 class="modal-title"><span class="color-red"><i class="fa fa-warning"></i> Error</span></h4>
           </div>
           <div class="modal-body">
-            <span v-html="error"></span>
+            <pre v-html="error"></pre>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

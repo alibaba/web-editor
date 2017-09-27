@@ -12,6 +12,7 @@ var app = new Vue({
     error: '',
     codeRunning: false,
     wsBuild: null,
+    generatedCode: '',
     editor: null,
     cursor: {},
     showCursorPercent: true,
@@ -19,8 +20,9 @@ var app = new Vue({
     nodeHovered: null,
     originNodeMaps: {},
     originNodes: [],
-    platform: 'Android',
-    serial: '',
+    autoCopy: true,
+    platform: localStorage.platform || 'Android',
+    serial: localStorage.serial || '',
     codeShortFlag: true, // generate short or long code
     imagePool: null,
     loading: false,
@@ -40,6 +42,14 @@ var app = new Vue({
         height: 1
       }
     },
+  },
+  watch: {
+    platform: function(newval) {
+      localStorage.setItem('platform', newval);
+    },
+    serial: function(newval) {
+      localStorage.setItem('serial', newval);
+    }
   },
   computed: {
     cursorValue: function() {
@@ -68,6 +78,11 @@ var app = new Vue({
       }
       if (this.platform == 'iOS' && this.serial == '') {
         return 'http://localhost:8100';
+      }
+      if (this.platform == 'Neco') {
+        var ipex = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b:?\d*/;
+        var t = this.serial.match(ipex);
+        return t ? t[0] : '';
       }
       return this.serial;
     }
@@ -165,7 +180,7 @@ var app = new Vue({
           this.deviceId = ret.deviceId
         }.bind(this))
         .fail(function(ret) {
-          this.showError(ret.responseJSON.description);
+          this.showAjaxError(ret);
           this.deviceId = lastDeviceId;
         }.bind(this))
     },
@@ -251,8 +266,6 @@ var app = new Vue({
           $jstree.jstree("open_all");
         })
         .on("changed.jstree", function(e, data) {
-          console.log("The selected nodes are:");
-          console.log(data.selected);
           var id = data.selected[0];
           var node = self.originNodeMaps[id];
           if (node) {
@@ -672,7 +685,7 @@ var app = new Vue({
       var kvs = [];
       // iOS: name, label, className
       // Android: text, description, resourceId, className
-      ['label', 'resourceId', 'name', 'text', 'description', 'className'].some(function(key) {
+      ['label', 'resourceId', 'name', 'text', 'type', 'tag', 'description', 'className'].some(function(key) {
         if (!node[key]) {
           return false;
         }
@@ -688,7 +701,7 @@ var app = new Vue({
     },
     generateNodeSelectorCode: function(node) {
       var params = this.generateNodeSelectorParams(node);
-      return 'd(' + params.join(', ') + ')';
+      return 'd(' + params.join(', ') + ').tap()';
     },
     doTap: function(node) {
       var self = this;
@@ -964,9 +977,12 @@ var app = new Vue({
             // self.drawHoverNode(pos);
           self.drawNode(self.nodeSelected, "red");
           var generatedCode = self.generateNodeSelectorCode(self.nodeSelected);
-          self.editor.setValue(generatedCode);
+          if (self.autoCopy) {
+            copyToClipboard(generatedCode);
+          }
+          self.generatedCode = generatedCode;
+          // self.editor.setValue(generatedCode);
 
-          console.log(self.nodeHovered.id);
           self.$jstree.jstree("deselect_all");
           self.$jstree.jstree("close_all");
           self.$jstree.jstree("select_node", "#" + self.nodeHovered.id);

@@ -251,7 +251,7 @@ class DeviceConnectHandler(BaseHandler):
             self.set_status(430, "Connect Error")
             self.write({
                 "success": False,
-                "description": str(e)
+                "description": traceback.format_exc(),
             })
         else:
             self.write({
@@ -280,10 +280,26 @@ class DeviceCodeDebugHandler(BaseHandler):
         start = time.time()
         buffer = StringIO.StringIO()
         sys.stdout = buffer
+        sys.stderr = buffer
+        
+        is_eval = True
+        compiled_code = None
         try:
-            exec(code, {'d': d})
+            compiled_code = compile(code, "<string>", "eval")
+        except SyntaxError:
+            is_eval = False
+            compiled_code = compile(code, "<string>", "exec")
+        try:
+            if is_eval:
+                ret = eval(code, {'d': d})
+                print(">>> " + repr(ret))
+            else:
+                exec(compiled_code, {'d': d})
+        except:
+            buffer.write(traceback.format_exc())
         finally:
             sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
         self.write({
             "success": True,
             "duration": int((time.time()-start)*1000),
