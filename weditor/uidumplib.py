@@ -100,7 +100,7 @@ def get_android_hierarchy(d):
     Returns:
         JSON object
     """
-    page_xml = d.dump(compressed=False, pretty=False).encode('utf-8')
+    page_xml = d.dump_hierarchy(compressed=False, pretty=False).encode('utf-8')
     dom = xml.dom.minidom.parseString(page_xml)
     root = dom.documentElement
 

@@ -239,7 +239,12 @@ class DeviceConnectHandler(BaseHandler):
         device_url = self.get_argument("deviceUrl")
         id = str(uuid.uuid4())
         try:
-            if platform in ['android', 'ios']:
+            if platform == 'android':
+                import uiautomator2 as u2
+                d = u2.connect(device_url)
+                d.platform = 'android'
+                cached_devices[id] = d
+            elif platform == 'ios':
                 import atx
                 d = atx.connect(device_url)
                 cached_devices[id] = d
