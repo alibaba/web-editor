@@ -396,6 +396,9 @@ var app = new Vue({
         })
       }
     },
+    delayReload: function(msec) {
+      setTimeout(this.screenDumpUI, msec || 1000);
+    },
     screenDumpUI: function() {
       var self = this;
       this.loading = true;
@@ -559,46 +562,6 @@ var app = new Vue({
         }.bind(this))
         // return this.codeRunDebug(codeSample);
     },
-    // codeRunDebug: function(code) {
-    //   var fullCode = ['# coding: utf-8', 'import atx', 'd = atx.connect()', code].join('\n');
-    //   return this.codeRun(fullCode);
-    // },
-    // codeRun: function(code) {
-    //   var dtd = $.Deferred();
-    //   this.console.content = '';
-    //   var ws = new WebSocket('ws://localhost:17310/ws/v1/build')
-    //   this.wsBuild = ws;
-    //   ws.onclose = function() {
-    //     console.log("ws closed");
-    //     this.codeRunning = false;
-    //   }.bind(this);
-    //   ws.onmessage = function(ret) {
-    //     var j = JSON.parse(ret.data);
-    //     this.console.content += (j.buffer || "");
-    //     if (j.result) {
-    //       ws.close()
-    //       if (!/\n$/.test(this.console.content)) {
-    //         this.console.content += '\n';
-    //       }
-    //       if (j.result.exitCode == 0) {
-    //         this.console.content += '[Finished in ' + j.result.duration / 1000 + 's]'
-    //         dtd.resolve();
-    //       } else {
-    //         this.console.content += '[Finished in ' + j.result.duration / 1000 + 's with exit ' + j.result.exitCode + ']'
-    //         dtd.reject()
-    //       }
-    //     }
-    //   }.bind(this);
-    //   ws.onopen = function() {
-    //     console.log("ready to send")
-    //     this.codeRunning = true;
-    //     ws.send(JSON.stringify({
-    //       content: code,
-    //       deviceUrl: this.deviceUrl,
-    //     }))
-    //   }.bind(this)
-    //   return dtd;
-    // },
     codeInsertPrepare: function(line) {
       if (/if $/.test(line)) {
         return;
@@ -654,7 +617,7 @@ var app = new Vue({
       if (this.nodeSelected) {
         var params = this.generateNodeSelectorParams(this.nodeSelected)
         code = 'd(' + params.join(', ') + ').set_text("' + text + '")';
-        code += "\n" + 'd.press("ENTER")'
+        // code += "\n" + 'd.press("ENTER")'
       } else {
         code = 'd.type("' + text + '")'
       }
@@ -662,15 +625,37 @@ var app = new Vue({
       this.loading = true;
       this.codeInsert(code);
       this.codeRunDebugCode(code)
-        .then(this.screenDumpUI)
+        .then(this.delayReload)
     },
     doClear: function() {
       var code = 'd.clear_text()'
       this.codeRunDebugCode(code)
-        .then(this.screenDumpUI)
+        .then(this.delayReload)
         .then(function() {
           return this.codeInsert(code);
         }.bind(this))
+    },
+    doTap: function(node) {
+      var self = this;
+      var code = this.generateNodeSelectorCode(node);
+      // FIXME(ssx): put into a standalone function
+      code += ".click()"
+      self.codeInsert(code);
+
+      this.loading = true;
+      this.codeRunDebugCode(code)
+        .then(function() {
+          self.delayReload();
+        })
+        .fail(function() {
+          self.loading = false;
+        })
+    },
+    doPositionTap: function(x, y) {
+      var code = 'd.click(' + x + ', ' + y + ')'
+      this.codeInsert(code);
+      this.codeRunDebugCode(code)
+        .then(this.delayReload)
     },
     generateNodeSelectorParams: function(node) {
       var self = this;
@@ -704,28 +689,6 @@ var app = new Vue({
     generateNodeSelectorCode: function(node) {
       var params = this.generateNodeSelectorParams(node);
       return 'd(' + params.join(', ') + ')';
-    },
-    doTap: function(node) {
-      var self = this;
-      var code = this.generateNodeSelectorCode(node);
-      // FIXME(ssx): put into a standalone function
-      code += ".click()"
-      self.codeInsert(code);
-
-      this.loading = true;
-      this.codeRunDebugCode(code)
-        .then(function() {
-          self.screenDumpUI();
-        })
-        .fail(function() {
-          self.loading = false;
-        })
-    },
-    doPositionTap: function(x, y) {
-      var code = 'd.click(' + x + ', ' + y + ')'
-      this.codeInsert(code);
-      this.codeRunDebugCode(code)
-        .then(this.screenDumpUI)
     },
     drawNode: function(node, color, dashed) {
       if (!node || !node.rect) {

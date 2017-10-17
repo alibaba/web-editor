@@ -11,9 +11,8 @@
   <link rel="stylesheet" type="text/css" href="/static/libs/fontawesome/css/font-awesome.min.css">
   <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.select/1.12.2/css/bootstrap-select.min.css">
   <link rel="stylesheet" type="text/css" href="{{static_url('style.css')}}">
-
-  <!-- test -->
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jstree/3.3.3/themes/default/style.min.css" />
+  <!-- jstree -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jstree@3.3.4/dist/themes/default/style.min.css">
 </head>
 
 <body>
@@ -84,7 +83,7 @@
             <div class="text-center">
               <button class="btn btn-default btn-sm" :disabled="!nodeSelected" v-on:click="doTap(nodeSelected)">Tap</button>
               <button class="btn btn-default btn-sm" v-on:click="doSendKeys('')">Send Keys</button>
-              <button class="btn btn-default btn-sm" v-on:click="doClear()">Clear Text</button>
+              <!-- <button class="btn btn-default btn-sm" v-on:click="doClear()">Clear Text</button> -->
             </div>
             <label>
               <input type="checkbox" v-model="codeShortFlag"> 精简代码
@@ -258,7 +257,7 @@
 <script src="/static/ace/ace.js"></script>
 <script src="/static/ace/mode-python.js"></script>
 <!-- <script src="http://10.240.187.174:8000/_d/js"></script> -->
-<script src="//cdnjs.cloudflare.com/ajax/libs/jstree/3.3.3/jstree.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/jstree@3.3.4/dist/jstree.min.js"></script>
 <script src="{{static_url('js/common.js')}}"></script>
 <script src="{{static_url('js/index.js')}}"></script>
 
