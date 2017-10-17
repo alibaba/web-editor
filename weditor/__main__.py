@@ -16,8 +16,7 @@ import base64
 import webbrowser
 import traceback
 import uuid
-import StringIO
-from io import BytesIO
+from io import BytesIO, StringIO
 
 import six
 import atx
@@ -283,7 +282,7 @@ class DeviceCodeDebugHandler(BaseHandler):
         d = get_device(device_id)
         code = self.get_argument('code')
         start = time.time()
-        buffer = StringIO.StringIO()
+        buffer = StringIO()
         sys.stdout = buffer
         sys.stderr = buffer
         

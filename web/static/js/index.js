@@ -187,9 +187,9 @@ var app = new Vue({
     keyeventHome: function() {
       var code = 'd.home()'
       if (this.platform == 'Android') {
-        code = 'd.press.home()'
+        code = 'd.press("home")'
       }
-      return this.codeRunDebug(code)
+      return this.codeRunDebugCode(code)
         .then(function() {
           return this.codeInsert(code);
         }.bind(this))
@@ -341,7 +341,7 @@ var app = new Vue({
           mac: 'Command-B'
         },
         exec: function(editor) {
-          self.codeRunDebugCode()
+          self.codeRunDebugCode(editor.getValue())
         },
       }, {
         name: 'build',
@@ -350,7 +350,7 @@ var app = new Vue({
           mac: 'Command-Enter'
         },
         exec: function(editor) {
-          self.codeRunDebugCode()
+          self.codeRunDebugCode(editor.getValue())
         },
       }]);
 
@@ -541,13 +541,13 @@ var app = new Vue({
         console.log("screen websocket closed")
       }
     },
-    codeRunDebugCode: function() {
+    codeRunDebugCode: function(code) {
       this.codeRunning = true;
       return $.ajax({
           method: 'post',
           url: LOCAL_URL + 'api/v1/devices/' + this.deviceId + '/exec',
           data: {
-            code: this.editor.getValue()
+            code: code
           }
         })
         .then(function(ret) {
@@ -559,49 +559,46 @@ var app = new Vue({
         }.bind(this))
         // return this.codeRunDebug(codeSample);
     },
-    codeRunDebug: function(code) {
-      var fullCode = ['# coding: utf-8', 'import atx', 'd = atx.connect()', code].join('\n');
-      return this.codeRun(fullCode);
-    },
-    codeRun: function(code) {
-      var dtd = $.Deferred();
-      this.console.content = '';
-      var ws = new WebSocket('ws://localhost:17310/ws/v1/build')
-      this.wsBuild = ws;
-      ws.onclose = function() {
-        console.log("ws closed");
-        this.codeRunning = false;
-      }.bind(this);
-      ws.onmessage = function(ret) {
-        var j = JSON.parse(ret.data);
-        this.console.content += (j.buffer || "");
-        if (j.result) {
-          ws.close()
-          if (!/\n$/.test(this.console.content)) {
-            this.console.content += '\n';
-          }
-          if (j.result.exitCode == 0) {
-            this.console.content += '[Finished in ' + j.result.duration / 1000 + 's]'
-            dtd.resolve();
-          } else {
-            this.console.content += '[Finished in ' + j.result.duration / 1000 + 's with exit ' + j.result.exitCode + ']'
-            dtd.reject()
-          }
-        }
-      }.bind(this);
-      ws.onopen = function() {
-        console.log("ready to send")
-        this.codeRunning = true;
-        ws.send(JSON.stringify({
-          content: code,
-          deviceUrl: this.deviceUrl,
-        }))
-      }.bind(this)
-      return dtd;
-    },
-    codeStopRun: function() {
-      this.wsBuild && this.wsBuild.send('"stop"'); // any code can stop it
-    },
+    // codeRunDebug: function(code) {
+    //   var fullCode = ['# coding: utf-8', 'import atx', 'd = atx.connect()', code].join('\n');
+    //   return this.codeRun(fullCode);
+    // },
+    // codeRun: function(code) {
+    //   var dtd = $.Deferred();
+    //   this.console.content = '';
+    //   var ws = new WebSocket('ws://localhost:17310/ws/v1/build')
+    //   this.wsBuild = ws;
+    //   ws.onclose = function() {
+    //     console.log("ws closed");
+    //     this.codeRunning = false;
+    //   }.bind(this);
+    //   ws.onmessage = function(ret) {
+    //     var j = JSON.parse(ret.data);
+    //     this.console.content += (j.buffer || "");
+    //     if (j.result) {
+    //       ws.close()
+    //       if (!/\n$/.test(this.console.content)) {
+    //         this.console.content += '\n';
+    //       }
+    //       if (j.result.exitCode == 0) {
+    //         this.console.content += '[Finished in ' + j.result.duration / 1000 + 's]'
+    //         dtd.resolve();
+    //       } else {
+    //         this.console.content += '[Finished in ' + j.result.duration / 1000 + 's with exit ' + j.result.exitCode + ']'
+    //         dtd.reject()
+    //       }
+    //     }
+    //   }.bind(this);
+    //   ws.onopen = function() {
+    //     console.log("ready to send")
+    //     this.codeRunning = true;
+    //     ws.send(JSON.stringify({
+    //       content: code,
+    //       deviceUrl: this.deviceUrl,
+    //     }))
+    //   }.bind(this)
+    //   return dtd;
+    // },
     codeInsertPrepare: function(line) {
       if (/if $/.test(line)) {
         return;
@@ -652,19 +649,24 @@ var app = new Vue({
       if (!text) {
         return;
       }
-      var params = ['"' + text + '"']
+      var code;
+      // var params = ['"' + text + '"']
       if (this.nodeSelected) {
-        params = params.concat(this.generateNodeSelectorParams(this.nodeSelected))
+        var params = this.generateNodeSelectorParams(this.nodeSelected)
+        code = 'd(' + params.join(', ') + ').set_text("' + text + '")';
+        code += "\n" + 'd.press("ENTER")'
+      } else {
+        code = 'd.type("' + text + '")'
       }
-      var code = 'd.type(' + params.join(', ') + ')'
+      // var code = 'd.type(' + params.join(', ') + ')'
       this.loading = true;
       this.codeInsert(code);
-      this.codeRun(this.generatePythonCode(code))
+      this.codeRunDebugCode(code)
         .then(this.screenDumpUI)
     },
     doClear: function() {
       var code = 'd.clear_text()'
-      this.codeRun(this.generatePythonCode(code))
+      this.codeRunDebugCode(code)
         .then(this.screenDumpUI)
         .then(function() {
           return this.codeInsert(code);
@@ -701,7 +703,7 @@ var app = new Vue({
     },
     generateNodeSelectorCode: function(node) {
       var params = this.generateNodeSelectorParams(node);
-      return 'd(' + params.join(', ') + ').tap()';
+      return 'd(' + params.join(', ') + ')';
     },
     doTap: function(node) {
       var self = this;
@@ -711,7 +713,7 @@ var app = new Vue({
       self.codeInsert(code);
 
       this.loading = true;
-      this.codeRun(this.generatePythonCode(code))
+      this.codeRunDebugCode(code)
         .then(function() {
           self.screenDumpUI();
         })
@@ -722,7 +724,7 @@ var app = new Vue({
     doPositionTap: function(x, y) {
       var code = 'd.click(' + x + ', ' + y + ')'
       this.codeInsert(code);
-      this.codeRun(this.generatePythonCode(code))
+      this.codeRunDebugCode(code)
         .then(this.screenDumpUI)
     },
     drawNode: function(node, color, dashed) {

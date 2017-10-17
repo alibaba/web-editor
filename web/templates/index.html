@@ -203,8 +203,8 @@
           </pre>
           <!-- <div class="panel-body"> -->
           <div>
-            <button class="btn btn-default btn-sm" v-if="!codeRunning" v-on:click="codeRunDebugCode">运行 <small>Ctrl+Enter</small></button>
-            <button class="btn btn-default btn-sm" v-if="codeRunning" v-on:click="codeStopRun">Stop</button>
+            <button class="btn btn-default btn-sm" v-if="!codeRunning" v-on:click="codeRunDebugCode(editor.getValue())">运行 <small>Ctrl+Enter</small></button>
+            <span class="btn btn-default btn-sm" v-if="codeRunning">运行中</span>
           </div>
           <!-- </div> -->
         </div>
