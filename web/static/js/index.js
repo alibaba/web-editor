@@ -184,16 +184,16 @@ var app = new Vue({
           this.deviceId = lastDeviceId;
         }.bind(this))
     },
-    keyeventHome: function() {
-      var code = 'd.home()'
-      if (this.platform == 'Android') {
-        code = 'd.press("home")'
+    keyevent: function(meta) {
+      var code = 'd.press("' + meta + '")'
+      if (this.platform != 'Android' && meta == 'home') {
+        code = 'd.home()'
       }
       return this.codeRunDebugCode(code)
         .then(function() {
           return this.codeInsert(code);
         }.bind(this))
-        .then(this.screenRefresh)
+        .then(this.delayReload)
     },
     sourceToJstree: function(source) {
       var n = {}

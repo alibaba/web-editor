@@ -57,8 +57,8 @@
           <img style="z-index: 10" v-if="loading" src="/static/loading.svg">
         </section>
         <section id="footer">
-          <button class="btn" @click="keyeventHome()"><i class="fa fa-home"></i>Home</button>
-          <button class="btn" disabled="true">Back</button>
+          <button class="btn" @click="keyevent('home')"><i class="fa fa-home"></i> Home</button>
+          <button class="btn" @click="keyevent('back')" :disabled="platform.toLowerCase() != 'android'"><i class="fa fa-chevron-left"></i> Back</button>
           <button class="btn" disabled="true">Menu</button>
         </section>
         <div class="horizon-gap"></div>
