@@ -16,7 +16,7 @@ import base64
 import webbrowser
 import traceback
 import uuid
-from io import BytesIO, StringIO
+from io import BytesIO
 
 import six
 import atx
@@ -255,7 +255,7 @@ class DeviceConnectHandler(BaseHandler):
             self.set_status(430, "Connect Error")
             self.write({
                 "success": False,
-                "description": traceback.format_exc(),
+                "description": traceback.format_exc().encode('utf-8'),
             })
         else:
             self.write({
@@ -282,7 +282,7 @@ class DeviceCodeDebugHandler(BaseHandler):
         d = get_device(device_id)
         code = self.get_argument('code')
         start = time.time()
-        buffer = StringIO()
+        buffer = BytesIO()
         sys.stdout = buffer
         sys.stderr = buffer
         
@@ -296,18 +296,18 @@ class DeviceCodeDebugHandler(BaseHandler):
         try:
             if is_eval:
                 ret = eval(code, {'d': d})
-                print(">>> " + repr(ret))
+                buffer.write((">>> " + repr(ret) + "\n").encode('utf-8'))
             else:
                 exec(compiled_code, {'d': d})
         except:
-            buffer.write(traceback.format_exc())
+            buffer.write(traceback.format_exc().encode('utf-8'))
         finally:
             sys.stdout = sys.__stdout__
             sys.stderr = sys.__stderr__
         self.write({
             "success": True,
             "duration": int((time.time()-start)*1000),
-            "content": buffer.getvalue(),
+            "content": buffer.getvalue().decode('utf-8'),
         })
 
 def make_app(settings={}):

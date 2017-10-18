@@ -167,7 +167,7 @@ var app = new Vue({
     doConnect: function() {
       var lastDeviceId = this.deviceId;
       this.deviceId = '';
-      $.ajax({
+      return $.ajax({
           url: LOCAL_URL + "api/v1/connect",
           method: 'POST',
           data: {
