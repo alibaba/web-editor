@@ -272,6 +272,11 @@ var app = new Vue({
             self.nodeSelected = node;
             self.drawAllNode();
             self.drawNode(node, "red");
+            var generatedCode = self.generateNodeSelectorCode(self.nodeSelected);
+            if (self.autoCopy) {
+              copyToClipboard(generatedCode);
+            }
+            self.generatedCode = generatedCode;
           }
         })
         .on("hover_node.jstree", function(e, data) {
@@ -781,6 +786,11 @@ var app = new Vue({
         if (!node.rect) {
           return false;
         }
+        // skip some types
+        console.log(node.type);
+        if (['Layout', 'Sprite'].includes(node.type)) {
+          return false;
+        }
         var area = node.rect.width * node.rect.height;
         if (area <= minArea) {
           minArea = area;
@@ -938,8 +948,8 @@ var app = new Vue({
 
         if (self.nodeHovered) {
           self.nodeSelected = self.nodeHovered;
-          self.drawAllNode()
-            // self.drawHoverNode(pos);
+          self.drawAllNode();
+          // self.drawHoverNode(pos);
           self.drawNode(self.nodeSelected, "red");
           var generatedCode = self.generateNodeSelectorCode(self.nodeSelected);
           if (self.autoCopy) {

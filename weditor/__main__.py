@@ -19,7 +19,6 @@ import uuid
 from io import BytesIO
 
 import six
-import atx
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
