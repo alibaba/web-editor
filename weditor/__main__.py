@@ -271,7 +271,8 @@ class DeviceHierarchyHandler(BaseHandler):
         elif d.platform == 'android':
             self.write(uidumplib.get_android_hierarchy(d))
         elif d.platform == 'neco':
-            self.write(d.dump_hierarchy())
+            dump = d.dump_hierarchy()
+            self.write(dump)
         else:
             self.write("Unknown platform")
 
