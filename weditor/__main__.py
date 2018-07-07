@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#-*- encoding: utf-8 -*-
+# -*- encoding: utf-8 -*-
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -27,7 +27,8 @@ from tornado import gen
 from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
 from tornado.concurrent import run_on_executor
-from concurrent.futures import ThreadPoolExecutor   # `pip install futures` for python2
+# `pip install futures` for python2
+from concurrent.futures import ThreadPoolExecutor
 
 try:
     import Queue as queue
@@ -100,6 +101,7 @@ def sha_file(path):
 def virt2real(path):
     return os.path.join(os.getcwd(), path.lstrip('/'))
 
+
 def real2virt(path):
     return os.path.relpath(path, os.getcwd()).replace('\\', '/')
 
@@ -108,11 +110,13 @@ class BaseHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Headers", "x-requested-with")
-        self.set_header("Access-Control-Allow-Credentials", "true") # allow cookie
-        self.set_header('Access-Control-Allow-Methods', 'POST, GET, PUT, DELETE, OPTIONS')
+        self.set_header("Access-Control-Allow-Credentials",
+                        "true")  # allow cookie
+        self.set_header('Access-Control-Allow-Methods',
+                        'POST, GET, PUT, DELETE, OPTIONS')
 
     def options(self, *args):
-        self.set_status(204) # no body
+        self.set_status(204)  # no body
         self.finish()
 
 
@@ -181,7 +185,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             start_time = time.time()
 
             self.proc = subprocess.Popen([sys.executable, "-u"],
-                env=env, stdout=PIPE, stderr=subprocess.STDOUT, stdin=PIPE)
+                                         env=env, stdout=PIPE, stderr=subprocess.STDOUT, stdin=PIPE)
             self.proc.stdin.write(code)
             self.proc.stdin.close()
 
@@ -198,7 +202,7 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
                 "result": {"exitCode": exit_code, "duration": int(duration)*1000}
             }
             gqueue.put((self, ret))
-            time.sleep(3) # wait until write done
+            time.sleep(3)  # wait until write done
         except Exception:
             traceback.print_exc()
 
@@ -285,7 +289,7 @@ class DeviceCodeDebugHandler(BaseHandler):
         buffer = BytesIO()
         sys.stdout = buffer
         sys.stderr = buffer
-        
+
         is_eval = True
         compiled_code = None
         try:
@@ -310,6 +314,7 @@ class DeviceCodeDebugHandler(BaseHandler):
             "content": buffer.getvalue().decode('utf-8'),
         })
 
+
 def make_app(settings={}):
     application = tornado.web.Application([
         (r"/", MainHandler),
@@ -322,16 +327,19 @@ def make_app(settings={}):
     ], **settings)
     return application
 
+
 is_closing = False
+
 
 def signal_handler(signum, frame):
     global is_closing
     print('exiting...')
     is_closing = True
 
-def try_exit(): 
+
+def try_exit():
     global is_closing
-    if is_closing: # clean up here
+    if is_closing:  # clean up here
         tornado.ioloop.IOLoop.instance().stop()
         print('exit success')
 
@@ -360,26 +368,60 @@ def run_web(debug=False):
     print('listen port', port)
     signal.signal(signal.SIGINT, signal_handler)
     application.listen(port)
-    tornado.ioloop.PeriodicCallback(try_exit, 100).start() 
+    tornado.ioloop.PeriodicCallback(try_exit, 100).start()
     tornado.ioloop.IOLoop.instance().add_callback(consume_queue)
     tornado.ioloop.IOLoop.instance().start()
 
 
+def create_shortcut():
+    import os
+    import sys
+    if os.name != 'nt':
+        sys.exit("Only valid in Windows")
+
+    import pythoncom
+    from win32com.shell import shell
+    from win32com.shell import shellcon
+    # Refs
+    # - https://github.com/pearu/iocbio/blob/master/installer/utils.py
+    # - https://blog.csdn.net/thundor/article/details/5968581
+    ilist = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_DESKTOP)
+    dtpath = shell.SHGetPathFromIDList(ilist).decode('utf-8')
+
+    shortcut = pythoncom.CoCreateInstance(
+        shell.CLSID_ShellLink, None,
+        pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink)
+    launch_path = sys.executable
+    shortcut.SetPath(launch_path)
+    shortcut.SetArguments("-m weditor")
+    shortcut.SetDescription(launch_path)
+    shortcut.SetIconLocation(sys.executable, 0)
+    shortcut.QueryInterface(
+        pythoncom.IID_IPersistFile).Save(dtpath + "\\WEditor.lnk", 0)
+    print("Shortcut created. " + dtpath + "\\WEditor.lnk")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('-q', '--quiet', action='store_true', help='quite mode, no open new browser')
-    ap.add_argument('-d', '--debug', action='store_true', help='open debug mode')
-    ap.add_argument('port', nargs='?', default=17310, help='local listen port for weditor')
+    ap.add_argument('-q', '--quiet', action='store_true',
+                    help='quite mode, no open new browser')
+    ap.add_argument('--debug', action='store_true',
+                    help='open debug mode')
+    ap.add_argument('--shortcut', action='store_true',
+                    help='create shortcut in desktop')
+    ap.add_argument('port', nargs='?', default=17310,
+                    help='local listen port for weditor')
 
     args = ap.parse_args()
+    if args.shortcut:
+        create_shortcut()
+        return
+
     open_browser = not args.quiet
 
     if open_browser:
         # webbrowser.open(url, new=2)
         webbrowser.open('http://atx.open.netease.com', new=2)
-    if args.debug:
-        import uiautomator
-        uiautomator.DEBUG = True
     run_web(args.debug)
 
 

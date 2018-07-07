@@ -21,6 +21,14 @@ Installation
 Usage
 -----
 
+Create Shortcut in Desktop
+
+.. code-block:: bash
+
+    python -m weditor --shortcut
+
+By click shortcut or run in command line
+
 .. code-block:: bash
 
     python -m weditor
