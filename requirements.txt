@@ -1,5 +1,6 @@
 tornado>=4.3
-futures>=3.0.5
-# subprocess32==3.2.7;python_version<=2.7
 six
 pillow
+
+# py3 have buildin concurrent.futures 
+futures ; python_version <= "2.7"
