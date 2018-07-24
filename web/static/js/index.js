@@ -11,6 +11,7 @@ var app = new Vue({
     },
     error: '',
     codeRunning: false,
+    autoCoding: true,
     wsBuild: null,
     generatedCode: '',
     editor: null,
@@ -66,9 +67,10 @@ var app = new Vue({
       return this.nodeSelected || {};
     },
     elemXpath: function() {
-      var xpath = '//' + (this.elem.className || '*');
-      if (this.elem.text) {
-        xpath += "[@text='" + this.elem.text + "']";
+      // var xpath = '//' + (this.elem.className || '*');
+      var xpath = ""
+      if (this.elem.path) {
+        xpath += this.elem.path;
       }
       return xpath;
     },
@@ -184,6 +186,16 @@ var app = new Vue({
           this.deviceId = lastDeviceId;
         }.bind(this))
     },
+    autoCodingSwitch: function(){
+      this.autoCoding = !this.autoCoding
+      if (this.autoCoding){
+        // document.getElementById("auto_coding_switch").innerHtml="autoCoding ON"
+         $('#auto_coding_switch').text("autoCoding ON")
+      }else{
+         $('#auto_coding_switch').text("autoCoding OFF")
+        // document.getElementById("auto_coding_switch").innerHtml="autoCoding OFF"
+      }
+    },
     keyevent: function(meta) {
       var code = 'd.press("' + meta + '")'
       if (this.platform != 'Android' && meta == 'home') {
@@ -272,6 +284,9 @@ var app = new Vue({
             self.nodeSelected = node;
             self.drawAllNode();
             self.drawNode(node, "red");
+            if (self.autoCoding){
+              self.doTap(node);
+            }
             var generatedCode = self.generateNodeSelectorCode(self.nodeSelected);
             if (self.autoCopy) {
               copyToClipboard(generatedCode);
@@ -664,16 +679,7 @@ var app = new Vue({
     },
     generateNodeSelectorParams: function(node) {
       var self = this;
-
-      function combineKeyValue(key, value) {
-        value = '"' + value + '"';
-        if (['text', 'name', 'label', 'description'].indexOf(key) >= 0) {
-          value = "u" + value; // python unicode
-        }
-        return key + '=' + value;
-      }
       var index = 0;
-      var params = [];
       var kvs = [];
       // iOS: name, label, className
       // Android: text, description, resourceId, className
@@ -681,19 +687,14 @@ var app = new Vue({
         if (!node[key]) {
           return false;
         }
-        params.push(combineKeyValue(key, node[key]));
         kvs.push([key, node[key]]);
         index = self.getNodeIndex(node.id, kvs);
         return self.codeShortFlag && index == 0;
       });
-      if (index > 0) {
-        params.push('instance=' + index);
-      }
-      return params;
+      return index;
     },
     generateNodeSelectorCode: function(node) {
-      var params = this.generateNodeSelectorParams(node);
-      return 'd(' + params.join(', ') + ')';
+      return 'd.xpath("' + node["path"] + '")';
     },
     drawNode: function(node, color, dashed) {
       if (!node || !node.rect) {
@@ -711,7 +712,11 @@ var app = new Vue({
         ctx.lineWidth = 1;
         ctx.setLineDash([8, 10]);
       } else {
-        ctx.lineWidth = 5;
+        if (color == 'yellow'){
+          ctx.lineWidth = 12;
+        }else{
+          ctx.lineWidth = 5;
+        }
         ctx.setLineDash([]);
       }
       ctx.strokeStyle = color;
@@ -736,10 +741,33 @@ var app = new Vue({
         }
         return nodes;
       }
+      this.generateXPath(source);
       this.originNodes = sourceToNodes(source) //ret.nodes;
-      this.drawAllNode();
       this.loading = false;
       this.canvasStyle.opacity = 1.0;
+    },
+    generateXPath: function(source){
+      var stack = [source];
+      source["path"] = "/";
+      stack.push(source);
+      while (stack.length > 0) {
+        var item = stack.pop();
+        if(item.children){
+          var typeMap = new Array();
+          for(var i=0;i<item.children.length;i++){
+            if(typeMap.hasOwnProperty(item.children[i]['type'])){
+              typeMap[item.children[i]['type']] += 1;
+            }else{
+              typeMap[item.children[i]['type']] = 1;
+            }
+            item.children[i]["path"] = item["path"] + "/" + item['children'][i]['type'];
+            if(typeMap[item.children[i]['type']] > 1){
+              item.children[i]["path"] += "[" + typeMap[item.children[i]['type']] + "]";
+            }
+            stack.push(item['children'][i]);
+          }
+        }
+      }
     },
     drawRefresh: function() {
       this.drawAllNode()
@@ -801,7 +829,7 @@ var app = new Vue({
       activeNodes.forEach(function(node) {
         self.drawNode(node, "blue")
       })
-      self.drawNode(self.nodeHovered, "green");
+      self.drawNode(self.nodeHovered, "yellow");
     },
     activeMouseControl: function() {
       var self = this;
