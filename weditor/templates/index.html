@@ -103,87 +103,87 @@
             <tbody>
               <template v-if="['iOS', 'Neco'].includes(platform)">
                 <tr>
-                  <td>Name</td>
+                  <td>name</td>
                   <td v-text="elem.name"></td>
                 </tr>
               </template>
               <template v-if="['Neco'].includes(platform)">
                 <tr>
-                  <td>Tag</td>
+                  <td>tag</td>
                   <td v-text="elem.tag"></td>
                 </tr>
                 <tr v-if="elem.anchor">
-                  <td>Anchor</td>
+                  <td>anchor</td>
                   <td>{{!elem.anchor.x}}, {{!elem.anchor.y}}</td>
                 </tr>
               </template>
               <tr>
-                <td>ClassName</td>
+                <td>className</td>
                 <td v-text="elem.className || elem.type"></td>
               </tr>
               <template v-if="['Android', 'Neco'].includes(platform)">
                 <tr>
-                  <td>Description</td>
+                  <td>description</td>
                   <td v-text="elem.description"></td>
                 </tr>
                 <tr>
-                  <td>Text</td>
+                  <td>text</td>
                   <td v-text="elem.text"></td>
                 </tr>
               </template>
               <template v-if="platform == 'Neco'">
                 <tr>
-                  <td>Touchable</td>
+                  <td>touchable</td>
                   <td v-text="elem.touchable"></td>
                 </tr>
               </template>
               <template v-if="platform == 'Android'">
                 <tr>
-                  <td>ResourceId</td>
+                  <td>resourceId</td>
                   <td v-text="elem.resourceId"></td>
                 </tr>
                 <tr>
-                  <td>Clickable</td>
+                  <td>clickable</td>
                   <td v-text="elem.clickable"></td>
                 </tr>
                 <tr>
-                  <td>PackageName</td>
+                  <td>packageName</td>
                   <td v-text="elem.package"></td>
                 </tr>
               </template>
               <template v-if="platform == 'iOS'">
                 <tr>
-                  <td>Label</td>
+                  <td>label</td>
                   <td v-text="elem.label"></td>
                 </tr>
                 <tr>
-                  <td>X, Y</td>
+                  <td>x, y</td>
                   <td>{{!elem.x}}, {{!elem.y}}</td>
                 </tr>
                 </tr>
                 <tr>
-                  <td>Width</td>
+                  <td>width</td>
                   <td v-text="elem.width"></td>
                 </tr>
                 <tr>
-                  <td>Height</td>
+                  <td>height</td>
                   <td v-text="elem.height"></td>
                 </tr>
               </template>
               <tr>
-                <td>Enabled</td>
+                <td>enabled</td>
                 <td v-text="elem.enabled"></td>
               </tr>
               <tr>
-                <td>Visible</td>
+                <td>visible</td>
                 <td v-text="elem.visible"></td>
               </tr>
               <tr>
-                <td>XPath(beta)</td>
+                <td>xpath(beta)</td>
                 <td v-text="elemXpath"></td>
               </tr>
               <tr>
-                <td>Position
+                <td>position
                   <i @click="showCursorPercent = !showCursorPercent" :class="{'inactive': showCursorPercent}" class="fa fa-percent cursor-pointer"
                     aria-hidden="true"></i>
                 </td>
