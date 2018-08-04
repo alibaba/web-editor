@@ -1,8 +1,8 @@
-window.LOCAL_URL = 'http://localhost:17310/';
+window.LOCAL_URL = '/'; // http://localhost:17310/';
 window.LOCAL_VERSION = '0.0.3'
 
 
-var app = new Vue({
+new Vue({
   el: '#app',
   data: {
     deviceId: '',
@@ -44,35 +44,35 @@ var app = new Vue({
     },
   },
   watch: {
-    platform: function(newval) {
+    platform: function (newval) {
       localStorage.setItem('platform', newval);
     },
-    serial: function(newval) {
+    serial: function (newval) {
       localStorage.setItem('serial', newval);
     }
   },
   computed: {
-    cursorValue: function() {
+    cursorValue: function () {
       if (this.showCursorPercent) {
         return { x: this.cursor.px, y: this.cursor.py }
       } else {
         return this.cursor
       }
     },
-    nodes: function() {
+    nodes: function () {
       return this.originNodes
     },
-    elem: function() {
+    elem: function () {
       return this.nodeSelected || {};
     },
-    elemXpath: function() {
+    elemXpath: function () {
       var xpath = '//' + (this.elem.className || '*');
       if (this.elem.text) {
         xpath += "[@text='" + this.elem.text + "']";
       }
       return xpath;
     },
-    deviceUrl: function() {
+    deviceUrl: function () {
       if (this.platform == 'Android' && this.serial == '') {
         return '';
       }
@@ -87,21 +87,21 @@ var app = new Vue({
       return this.serial;
     }
   },
-  created: function() {
+  created: function () {
     this.imagePool = new ImagePool(100);
   },
-  mounted: function() {
+  mounted: function () {
     var URL = window.URL || window.webkitURL;
     var currentSize = null;
     var self = this;
 
     this.canvas.bg = document.getElementById('bgCanvas')
     this.canvas.fg = document.getElementById('fgCanvas')
-      // this.canvas = c;
+    // this.canvas = c;
     window.c = this.canvas.bg;
     var ctx = c.getContext('2d')
 
-    $(window).resize(function() {
+    $(window).resize(function () {
       self.resizeScreen();
     })
 
@@ -130,14 +130,14 @@ var app = new Vue({
     // this.loadLiveScreen();
   },
   methods: {
-    checkVersion: function() {
+    checkVersion: function () {
       var self = this;
       $.ajax({
-          url: LOCAL_URL + "api/v1/version",
-          type: "GET",
-          //contentType: "application/json; charset=utf-8"
-        })
-        .done(function(ret) {
+        url: LOCAL_URL + "api/v1/version",
+        type: "GET",
+        //contentType: "application/json; charset=utf-8"
+      })
+        .done(function (ret) {
           console.log("version", ret.name);
           if (ret.name !== LOCAL_VERSION) {
             self.showError("Expect local server version: " + LOCAL_VERSION + " but got " + ret.name + ", Maybe you need upgrade 'weditor'");
@@ -157,45 +157,45 @@ var app = new Vue({
             self.canvasStyle.opacity = 1.0;
           }
         })
-        .fail(function(ret) {
+        .fail(function (ret) {
           self.showError("<p>Local server not started, start with</p><pre>$ python -m weditor</pre>");
         })
-        .always(function() {
+        .always(function () {
           self.loading = false;
         })
     },
-    doConnect: function() {
+    doConnect: function () {
       var lastDeviceId = this.deviceId;
       this.deviceId = '';
       return $.ajax({
-          url: LOCAL_URL + "api/v1/connect",
-          method: 'POST',
-          data: {
-            platform: this.platform,
-            deviceUrl: this.deviceUrl,
-          },
-        })
-        .then(function(ret) {
+        url: LOCAL_URL + "api/v1/connect",
+        method: 'POST',
+        data: {
+          platform: this.platform,
+          deviceUrl: this.deviceUrl,
+        },
+      })
+        .then(function (ret) {
           console.log(ret)
           this.deviceId = ret.deviceId
         }.bind(this))
-        .fail(function(ret) {
+        .fail(function (ret) {
           this.showAjaxError(ret);
           this.deviceId = lastDeviceId;
         }.bind(this))
     },
-    keyevent: function(meta) {
+    keyevent: function (meta) {
       var code = 'd.press("' + meta + '")'
       if (this.platform != 'Android' && meta == 'home') {
         code = 'd.home()'
       }
       return this.codeRunDebugCode(code)
-        .then(function() {
+        .then(function () {
           return this.codeInsert(code);
         }.bind(this))
         .then(this.delayReload)
     },
-    sourceToJstree: function(source) {
+    sourceToJstree: function (source) {
       var n = {}
       n.id = source.id;
       n.text = source.type || source.className
@@ -208,13 +208,13 @@ var app = new Vue({
       n.icon = this.sourceTypeIcon(source.type);
       if (source.children) {
         n.children = []
-        source.children.forEach(function(s) {
+        source.children.forEach(function (s) {
           n.children.push(this.sourceToJstree(s))
         }.bind(this))
       }
       return n;
     },
-    sourceTypeIcon: function(widgetType) {
+    sourceTypeIcon: function (widgetType) {
       switch (widgetType) {
         case "Scene":
           return "glyphicon glyphicon-tree-conifer"
@@ -236,36 +236,36 @@ var app = new Vue({
           return "glyphicon glyphicon-object-align-horizontal"
       }
     },
-    showError: function(error) {
+    showError: function (error) {
       this.loading = false;
       this.error = error;
       $('.modal').modal('show');
     },
-    showAjaxError: function(ret) {
+    showAjaxError: function (ret) {
       if (ret.responseJSON && ret.responseJSON.description) {
         this.showError(ret.responseJSON.description);
       } else {
         this.showError("<p>Local server not started, start with</p><pre>$ python -m weditor</pre>");
       }
     },
-    initJstree: function() {
+    initJstree: function () {
       var $jstree = $("#jstree-hierarchy");
       this.$jstree = $jstree;
       var self = this;
       $jstree.jstree({
-          plugins: ["search"],
-          core: {
-            multiple: false,
-            themes: {
-              "variant": "small"
-            },
-            data: []
-          }
-        })
-        .on('ready.jstree refresh.jstree', function() {
+        plugins: ["search"],
+        core: {
+          multiple: false,
+          themes: {
+            "variant": "small"
+          },
+          data: []
+        }
+      })
+        .on('ready.jstree refresh.jstree', function () {
           $jstree.jstree("open_all");
         })
-        .on("changed.jstree", function(e, data) {
+        .on("changed.jstree", function (e, data) {
           var id = data.selected[0];
           var node = self.originNodeMaps[id];
           if (node) {
@@ -279,22 +279,22 @@ var app = new Vue({
             self.generatedCode = generatedCode;
           }
         })
-        .on("hover_node.jstree", function(e, data) {
+        .on("hover_node.jstree", function (e, data) {
           var node = self.originNodeMaps[data.node.id];
           if (node) {
             self.nodeHovered = node;
             self.drawRefresh()
           }
         })
-        .on("dehover_node.jstree", function() {
+        .on("dehover_node.jstree", function () {
           self.nodeHovered = null;
           self.drawRefresh()
         })
-      $("#jstree-search").on('propertychange input', function(e) {
+      $("#jstree-search").on('propertychange input', function (e) {
         var ret = $jstree.jstree(true).search($(this).val());
       })
     },
-    initDragDealer: function() {
+    initDragDealer: function () {
       var self = this;
       var updateFunc = null;
 
@@ -311,9 +311,9 @@ var app = new Vue({
         document.removeEventListener('mouseleave', dragStopListener);
       }
 
-      $('#vertical-gap1').mousedown(function(e) {
+      $('#vertical-gap1').mousedown(function (e) {
         e.preventDefault();
-        updateFunc = function(evt) {
+        updateFunc = function (evt) {
           $("#left").width(evt.clientX);
         }
         document.addEventListener('mousemove', dragMoveListener);
@@ -321,8 +321,8 @@ var app = new Vue({
         document.addEventListener('mouseleave', dragStopListener)
       });
 
-      $('.horizon-gap').mousedown(function(e) {
-        updateFunc = function(evt) {
+      $('.horizon-gap').mousedown(function (e) {
+        updateFunc = function (evt) {
           var $el = $("#console");
           var y = evt.clientY;
           $el.height($(window).height() - y)
@@ -333,7 +333,7 @@ var app = new Vue({
         document.addEventListener('mouseleave', dragStopListener)
       })
     },
-    initEditor: function(editor) {
+    initEditor: function (editor) {
       var self = this;
       editor.getSession().setMode("ace/mode/python");
       editor.getSession().setUseSoftTabs(true);
@@ -345,7 +345,7 @@ var app = new Vue({
           win: 'Ctrl-B',
           mac: 'Command-B'
         },
-        exec: function(editor) {
+        exec: function (editor) {
           self.codeRunDebugCode(editor.getValue())
         },
       }, {
@@ -354,7 +354,7 @@ var app = new Vue({
           win: 'Ctrl-Enter',
           mac: 'Command-Enter'
         },
-        exec: function(editor) {
+        exec: function (editor) {
           self.codeRunDebugCode(editor.getValue())
         },
       }]);
@@ -363,7 +363,7 @@ var app = new Vue({
       // editor.setHighlightActiveLine(false);
       editor.$blockScrolling = Infinity;
     },
-    resizeScreen: function(img) {
+    resizeScreen: function (img) {
       // check if need update
       if (img) {
         if (this.lastScreenSize.canvas.width == img.width &&
@@ -401,37 +401,37 @@ var app = new Vue({
         })
       }
     },
-    delayReload: function(msec) {
+    delayReload: function (msec) {
       setTimeout(this.screenDumpUI, msec || 1000);
     },
-    screenDumpUI: function() {
+    screenDumpUI: function () {
       var self = this;
       this.loading = true;
       this.canvasStyle.opacity = 0.5;
       return this.screenRefresh()
-        .fail(function(ret) {
+        .fail(function (ret) {
           self.showAjaxError(ret);
         })
-        .then(function() {
+        .then(function () {
           return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(self.deviceId || '-') + '/hierarchy')
         })
-        .fail(function(ret) {
+        .fail(function (ret) {
           self.showAjaxError(ret);
         })
-        .then(function(source) {
+        .then(function (source) {
           localStorage.setItem('windowHierarchy', JSON.stringify(source));
           self.drawAllNodeFromSource(source);
         })
     },
-    screenRefresh: function() {
+    screenRefresh: function () {
       return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.deviceId || '-') + '/screenshot')
-        .then(function(ret) {
+        .then(function (ret) {
           var blob = b64toBlob(ret.data, 'image/' + ret.type);
           this.drawBlobImageToScreen(blob);
           localStorage.setItem('screenshotBase64', ret.data);
         }.bind(this))
     },
-    drawBlobImageToScreen: function(blob) {
+    drawBlobImageToScreen: function (blob) {
       // Support jQuery Promise
       var dtd = $.Deferred();
       var bgcanvas = this.canvas.bg,
@@ -442,7 +442,7 @@ var app = new Vue({
         BLANK_IMG = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
         img = this.imagePool.next();
 
-      img.onload = function() {
+      img.onload = function () {
         console.log("image")
         fgcanvas.width = bgcanvas.width = img.width
         fgcanvas.height = bgcanvas.height = img.height
@@ -466,7 +466,7 @@ var app = new Vue({
         dtd.resolve();
       }
 
-      img.onerror = function() {
+      img.onerror = function () {
         // Happily ignore. I suppose this shouldn't happen, but
         // sometimes it does, presumably when we're loading images
         // too quickly.
@@ -485,7 +485,7 @@ var app = new Vue({
       img.src = url;
       return dtd;
     },
-    loadLiveScreen: function() {
+    loadLiveScreen: function () {
       var self = this;
       var BLANK_IMG =
         'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
@@ -498,16 +498,16 @@ var app = new Vue({
         canvas: {}
       };
 
-      ws.onopen = function(ev) {
+      ws.onopen = function (ev) {
         console.log('screen websocket connected')
       };
-      ws.onmessage = function(message) {
+      ws.onmessage = function (message) {
         console.log("New message");
         var blob = new Blob([message.data], {
           type: 'image/jpeg'
         })
         var img = self.imagePool.next();
-        img.onload = function() {
+        img.onload = function () {
           canvas.width = img.width
           canvas.height = img.height
           ctx.drawImage(img, 0, 0, img.width, img.height);
@@ -527,7 +527,7 @@ var app = new Vue({
           url = null
         }
 
-        img.onerror = function() {
+        img.onerror = function () {
           // Happily ignore. I suppose this shouldn't happen, but
           // sometimes it does, presumably when we're loading images
           // too quickly.
@@ -545,29 +545,29 @@ var app = new Vue({
         img.src = url;
       }
 
-      ws.onclose = function(ev) {
+      ws.onclose = function (ev) {
         console.log("screen websocket closed")
       }
     },
-    codeRunDebugCode: function(code) {
+    codeRunDebugCode: function (code) {
       this.codeRunning = true;
       return $.ajax({
-          method: 'post',
-          url: LOCAL_URL + 'api/v1/devices/' + this.deviceId + '/exec',
-          data: {
-            code: code
-          }
-        })
-        .then(function(ret) {
+        method: 'post',
+        url: LOCAL_URL + 'api/v1/devices/' + this.deviceId + '/exec',
+        data: {
+          code: code
+        }
+      })
+        .then(function (ret) {
           this.console.content = ret.content;
           this.console.content += '[Finished in ' + ret.duration / 1000 + 's]'
         }.bind(this))
-        .always(function() {
+        .always(function () {
           this.codeRunning = false;
         }.bind(this))
-        // return this.codeRunDebug(codeSample);
+      // return this.codeRunDebug(codeSample);
     },
-    codeInsertPrepare: function(line) {
+    codeInsertPrepare: function (line) {
       if (/if $/.test(line)) {
         return;
       }
@@ -583,19 +583,19 @@ var app = new Vue({
         return;
       }
     },
-    codeInsert: function(code) {
+    codeInsert: function (code) {
       var editor = this.editor;
       var currentLine = editor.session.getLine(editor.getCursorPosition().row);
       this.codeInsertPrepare(currentLine);
       editor.insert(code);
     },
-    getNodeIndex: function(id, kvs) {
+    getNodeIndex: function (id, kvs) {
       var skip = false;
-      return this.nodes.filter(function(node) {
+      return this.nodes.filter(function (node) {
         if (skip) {
           return false;
         }
-        var ok = kvs.every(function(kv) {
+        var ok = kvs.every(function (kv) {
           var k = kv[0],
             v = kv[1];
           return node[k] == v;
@@ -606,10 +606,10 @@ var app = new Vue({
         return ok;
       }).length - 1;
     },
-    generatePythonCode: function(code) {
+    generatePythonCode: function (code) {
       return ['# coding: utf-8', 'import atx', 'd = atx.connect()', code].join('\n');
     },
-    doSendKeys: function(text) {
+    doSendKeys: function (text) {
       // self.codeInsert()
       if (!text) {
         text = window.prompt("Input text?")
@@ -632,15 +632,15 @@ var app = new Vue({
       this.codeRunDebugCode(code)
         .then(this.delayReload)
     },
-    doClear: function() {
+    doClear: function () {
       var code = 'd.clear_text()'
       this.codeRunDebugCode(code)
         .then(this.delayReload)
-        .then(function() {
+        .then(function () {
           return this.codeInsert(code);
         }.bind(this))
     },
-    doTap: function(node) {
+    doTap: function (node) {
       var self = this;
       var code = this.generateNodeSelectorCode(node);
       // FIXME(ssx): put into a standalone function
@@ -649,20 +649,20 @@ var app = new Vue({
 
       this.loading = true;
       this.codeRunDebugCode(code)
-        .then(function() {
+        .then(function () {
           self.delayReload();
         })
-        .fail(function() {
+        .fail(function () {
           self.loading = false;
         })
     },
-    doPositionTap: function(x, y) {
+    doPositionTap: function (x, y) {
       var code = 'd.click(' + x + ', ' + y + ')'
       this.codeInsert(code);
       this.codeRunDebugCode(code)
         .then(this.delayReload)
     },
-    generateNodeSelectorParams: function(node) {
+    generateNodeSelectorParams: function (node) {
       var self = this;
 
       function combineKeyValue(key, value) {
@@ -677,7 +677,7 @@ var app = new Vue({
       var kvs = [];
       // iOS: name, label, className
       // Android: text, description, resourceId, className
-      ['label', 'resourceId', 'name', 'text', 'type', 'tag', 'description', 'className'].some(function(key) {
+      ['label', 'resourceId', 'name', 'text', 'type', 'tag', 'description', 'className'].some(function (key) {
         if (!node[key]) {
           return false;
         }
@@ -691,11 +691,11 @@ var app = new Vue({
       }
       return params;
     },
-    generateNodeSelectorCode: function(node) {
+    generateNodeSelectorCode: function (node) {
       var params = this.generateNodeSelectorParams(node);
       return 'd(' + params.join(', ') + ')';
     },
-    drawNode: function(node, color, dashed) {
+    drawNode: function (node, color, dashed) {
       if (!node || !node.rect) {
         return;
       }
@@ -717,7 +717,7 @@ var app = new Vue({
       ctx.strokeStyle = color;
       ctx.stroke(rectangle);
     },
-    drawAllNodeFromSource: function(source) {
+    drawAllNodeFromSource: function (source) {
       var jstreeData = this.sourceToJstree(source);
       var jstree = this.$jstree.jstree(true);
       jstree.settings.core.data = jstreeData;
@@ -730,7 +730,7 @@ var app = new Vue({
         nodeMaps[node.id] = node;
         var nodes = [node];
         if (source.children) {
-          source.children.forEach(function(s) {
+          source.children.forEach(function (s) {
             nodes = nodes.concat(sourceToNodes(s))
           })
         }
@@ -741,21 +741,21 @@ var app = new Vue({
       this.loading = false;
       this.canvasStyle.opacity = 1.0;
     },
-    drawRefresh: function() {
+    drawRefresh: function () {
       this.drawAllNode()
       if (this.nodeHovered) {
-        this.drawNode(this.nodeHovered, "yellow")
+        this.drawNode(this.nodeHovered, "blue")
       }
       if (this.nodeSelected) {
         this.drawNode(this.nodeSelected, "red")
       }
     },
-    drawAllNode: function() {
+    drawAllNode: function () {
       var self = this;
       var canvas = self.canvas.fg;
       var ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      self.nodes.forEach(function(node) {
+      self.nodes.forEach(function (node) {
         // ignore some types
         if (['Layout'].includes(node.type)) {
           return;
@@ -763,7 +763,7 @@ var app = new Vue({
         self.drawNode(node, 'black', true);
       })
     },
-    drawHoverNode: function(pos) {
+    drawHoverNode: function (pos) {
       var self = this;
       var canvas = self.canvas.fg;
       self.nodeHovered = null;
@@ -779,7 +779,7 @@ var app = new Vue({
           ry = node.rect.height + ly;
         return lx < x && x < rx && ly < y && y < ry;
       }
-      var activeNodes = self.nodes.filter(function(node) {
+      var activeNodes = self.nodes.filter(function (node) {
         if (!isInside(node, pos.x, pos.y)) {
           return false;
         }
@@ -798,12 +798,12 @@ var app = new Vue({
         }
         return true;
       })
-      activeNodes.forEach(function(node) {
-        self.drawNode(node, "blue")
+      activeNodes.forEach(function (node) {
+        self.drawNode(node, "blue", true)
       })
-      self.drawNode(self.nodeHovered, "green");
+      self.drawNode(self.nodeHovered, "blue");
     },
-    activeMouseControl: function() {
+    activeMouseControl: function () {
       var self = this;
       var element = this.canvas.fg;
 
@@ -910,17 +910,17 @@ var app = new Vue({
           return
         }
         e.preventDefault()
-          // startMousing()
+        // startMousing()
 
         var x = e.pageX - screen.bounds.x
         var y = e.pageY - screen.bounds.y
         var pos = coord(event);
 
         self.drawAllNode()
-        self.drawHoverNode(pos);
         if (self.nodeSelected) {
           self.drawNode(self.nodeSelected, "red");
         }
+        self.drawHoverNode(pos);
         if (self.cursor.px) {
           markPosition(self.cursor)
         }
@@ -939,7 +939,7 @@ var app = new Vue({
 
         fakePinch = e.altKey
         calculateBounds()
-          // startMousing()
+        // startMousing()
 
         var x = e.pageX - screen.bounds.x
         var y = e.pageY - screen.bounds.y

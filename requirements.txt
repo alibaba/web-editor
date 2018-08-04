@@ -3,4 +3,4 @@ six
 pillow
 
 # py3 have buildin concurrent.futures 
-futures ; python_version <= "2.7"
+futures>=3.0.5 ; python_version <= '2.7'
