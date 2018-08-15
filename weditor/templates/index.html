@@ -104,57 +104,57 @@
               <template v-if="['iOS', 'Neco'].includes(platform)">
                 <tr>
                   <td>name</td>
-                  <td v-text="elem.name"></td>
+                  <td contenteditable v-text="elem.name"></td>
                 </tr>
               </template>
               <template v-if="['Neco'].includes(platform)">
                 <tr>
                   <td>tag</td>
-                  <td v-text="elem.tag"></td>
+                  <td contenteditable v-text="elem.tag"></td>
                 </tr>
                 <tr v-if="elem.anchor">
                   <td>anchor</td>
-                  <td>{{!elem.anchor.x}}, {{!elem.anchor.y}}</td>
+                  <td contenteditable>{{!elem.anchor.x}}, {{!elem.anchor.y}}</td>
                 </tr>
               </template>
               <tr>
                 <td>className</td>
-                <td v-text="elem.className || elem.type"></td>
+                <td contenteditable v-text="elem.className || elem.type"></td>
               </tr>
               <template v-if="['Android', 'Neco'].includes(platform)">
                 <tr>
                   <td>description</td>
-                  <td v-text="elem.description"></td>
+                  <td contenteditable v-text="elem.description"></td>
                 </tr>
                 <tr>
                   <td>text</td>
-                  <td v-text="elem.text"></td>
+                  <td contenteditable v-text="elem.text"></td>
                 </tr>
               </template>
               <template v-if="platform == 'Neco'">
                 <tr>
                   <td>touchable</td>
-                  <td v-text="elem.touchable"></td>
+                  <td contenteditable v-text="elem.touchable"></td>
                 </tr>
               </template>
               <template v-if="platform == 'Android'">
                 <tr>
                   <td>resourceId</td>
-                  <td v-text="elem.resourceId"></td>
+                  <td contenteditable v-text="elem.resourceId"></td>
                 </tr>
                 <tr>
                   <td>clickable</td>
-                  <td v-text="elem.clickable"></td>
+                  <td contenteditable v-text="elem.clickable"></td>
                 </tr>
                 <tr>
                   <td>packageName</td>
-                  <td v-text="elem.package"></td>
+                  <td contenteditable v-text="elem.package"></td>
                 </tr>
               </template>
               <template v-if="platform == 'iOS'">
                 <tr>
                   <td>label</td>
-                  <td v-text="elem.label"></td>
+                  <td contenteditable v-text="elem.label"></td>
                 </tr>
                 <tr>
                   <td>x, y</td>
@@ -180,7 +180,7 @@
               </tr>
               <tr>
                 <td>xpath(beta)</td>
-                <td v-text="elemXpath"></td>
+                <td contenteditable v-text="elemXpath"></td>
               </tr>
               <tr>
                 <td>position
