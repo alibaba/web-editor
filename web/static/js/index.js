@@ -659,7 +659,7 @@ var app = new Vue({
       var self = this;
       var code = this.generateNodeSelectorCode(node);
       // FIXME(ssx): put into a standalone function
-      code += ".click()"
+      code = 'd.xpath("' + code + '")' + ".click()"
       self.codeInsert(code);
 
       this.loading = true;
@@ -694,7 +694,7 @@ var app = new Vue({
       return index;
     },
     generateNodeSelectorCode: function(node) {
-      return 'd.xpath("' + node["path"] + '")';
+      return node["path"];
     },
     drawNode: function(node, color, dashed) {
       if (!node || !node.rect) {
@@ -748,7 +748,7 @@ var app = new Vue({
     },
     generateXPath: function(source){
       var stack = [source];
-      source["path"] = "/";
+      source["path"] = "/root";
       stack.push(source);
       while (stack.length > 0) {
         var item = stack.pop();
@@ -766,6 +766,8 @@ var app = new Vue({
             }
             stack.push(item['children'][i]);
           }
+        }else {
+          item['path'] = item['path'] + "[@name=" + "'" + item['name'] + "'" + "]"
         }
       }
     },
