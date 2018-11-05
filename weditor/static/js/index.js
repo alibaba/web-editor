@@ -45,7 +45,7 @@ new Vue({
     ws: null,
     wsControl:null,
     rotation: null,
-    isFreeze: true
+    isNotFreeze: true
   },
   watch: {
     platform: function (newval) {
@@ -182,10 +182,17 @@ new Vue({
         .then(function (ret) {
           console.log(ret);
           this.deviceId = ret.deviceId;
-          this.serial = ret.ip;
-          // this.hold();
-          this.activeRemoteMouseControl();
-          this.loadLiveScreen();
+          if(ret.ip && this.platform == 'Android'){
+            var port = this.serial.split(":")[1] ? ":" + this.serial.split(":")[1] : "";
+            this.serial = ret.ip + port;
+          }
+          if(this.platform == 'iOS'){
+            this.isNotFreeze = false;
+          } else{
+            this.activeRemoteMouseControl();
+            this.loadLiveScreen();
+          }
+
         }.bind(this))
         .fail(function (ret) {
           this.showAjaxError(ret);
@@ -422,8 +429,6 @@ new Vue({
         })
     },
     screenDumpUI: function () {
-      this.ws.close();
-      this.wsControl.close();
       var self = this;
       this.loading = true;
       this.canvasStyle.opacity = 0.5;
@@ -509,8 +514,14 @@ new Vue({
       var BLANK_IMG =
         'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
       var protocol = location.protocol == "http:" ? "ws://" : "wss://";
-      var port = this.serial.split(":")[1] ? this.serial.split(":")[1] : "7912";
-      var ws = this.ws = new WebSocket('ws://' + this.serial + ':' + port + '/minicap');
+
+      var port = "7912";
+      if(this.platform == 'Android'){
+          port = this.serial.split(":")[1] ? this.serial.split(":")[1] : "7912";
+      }
+      var ip = this.serial.split(":")[0];
+      var ws = this.ws = new WebSocket('ws://' + ip + ':' + port + '/minicap');
+
       var canvas = document.getElementById('bgCanvas');
       var ctx = canvas.getContext('2d');
       var lastScreenSize = {
@@ -574,16 +585,23 @@ new Vue({
       }
     },
     freezeHandler: function(){
-      if(this.wsControl == null){
-        return;
-      }
-      if(this.isFreeze){
+      if(this.wsControl == null || this.platform == 'iOS'){
         this.screenDumpUI();
-        this.isFreeze = false;
+        return
+      }
+      if(this.isNotFreeze){
+        if(this.ws){
+          this.ws.close();
+        }
+        if(this.wsControl){
+          this.wsControl.close();
+        }
+        this.screenDumpUI();
+        this.isNotFreeze = false;
       } else {
         this.activeRemoteMouseControl();
         this.loadLiveScreen();
-        this.isFreeze = true;
+        this.isNotFreeze = true;
       }
     },
     codeRunDebugCode: function (code) {
@@ -1005,8 +1023,12 @@ new Vue({
         bounds: {}
       };
 
-      var port = this.serial.split(":")[1] ? this.serial.split(":")[1] : "7912";
-      var ws = this.wsControl = new WebSocket('ws://' + this.serial + ':' + port + '/minitouch');
+      var port = "7912";
+      if(this.platform == 'Android'){
+          port = this.serial.split(":")[1] ? this.serial.split(":")[1] : "7912";
+      }
+      var ip = this.serial.split(":")[0];
+      var ws = this.wsControl = new WebSocket('ws://' + ip + ':' + port + '/minitouch');
       ws.onerror = function (ev) {
         console.log("minitouch websocket error:", ev)
       };
