@@ -29,15 +29,15 @@ function copyToClipboard(text) {
 
 /* Image Pool */
 function ImagePool(size) {
-  this.size = size
-  this.images = []
+  this.size = size;
+  this.images = [];
   this.counter = 0
 }
 
 ImagePool.prototype.next = function() {
   if (this.images.length < this.size) {
-    var image = new Image()
-    this.images.push(image)
+    var image = new Image();
+    this.images.push(image);
     return image
   } else {
     if (this.counter >= this.size) {
@@ -47,7 +47,7 @@ ImagePool.prototype.next = function() {
   }
 
   return this.images[this.counter++ % this.size]
-}
+};
 
 // convert to blob data
 function b64toBlob(b64Data, contentType, sliceSize) {
@@ -82,14 +82,6 @@ var MiniTouch = {
     function sendJSON(obj) {
         ws.send(JSON.stringify(obj))
     }
-
-    // control.coords = function(w, h, x, y, rotation) {
-    //   console.log(w, h, x, y, rotation)
-    //   return {
-    //     xP: x / w,
-    //     yP: y / h,
-    //   }
-    // };
 
     control.touchDown = function(index, xP, yP, pressure) {
         sendJSON({
@@ -131,28 +123,28 @@ function coords(boundingW, boundingH, relX, relY, rotation) {
 
   switch (rotation) {
     case 0:
-        w = boundingW
-        h = boundingH
-        x = relX
-        y = relY
-        break
+        w = boundingW;
+        h = boundingH;
+        x = relX;
+        y = relY;
+        break;
     case 90:
-        w = boundingH
-        h = boundingW
-        x = boundingH - relY
-        y = relX
-        break
+        w = boundingH;
+        h = boundingW;
+        x = boundingH - relY;
+        y = relX;
+        break;
     case 180:
-        w = boundingW
-        h = boundingH
-        x = boundingW - relX
-        y = boundingH - relY
-        break
+        w = boundingW;
+        h = boundingH;
+        x = boundingW - relX;
+        y = boundingH - relY;
+        break;
     case 270:
-        w = boundingH
-        h = boundingW
-        x = relY
-        y = boundingW - relX
+        w = boundingH;
+        h = boundingW;
+        x = relY;
+        y = boundingW - relX;
         break
   }
 

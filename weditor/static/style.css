@@ -211,3 +211,7 @@ i.inactive {
 .text-line-through:hover   {text-decoration: line-through;}
 .text-line-through:active  {text-decoration: line-through;}
 .text-line-through:focus  {text-decoration: line-through;}
+
+.tips-text{
+  font-size: smaller;
+}

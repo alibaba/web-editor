@@ -86,6 +86,7 @@
                 <i class="fa fa-snowflake-o"></i> Freeze
               </button>
             </span>
+            <span class="pull-right tips-text">鼠标左键控制手机，中键、右键选择元素</span>
           </div>
           <div class="panel-body">
             <div class="text-center">
@@ -305,8 +306,8 @@
 </script>
 <script>
   window.onload = function(){
-    var right = document.getElementById("app");
-    //去掉默认的contextmenu事件，否则会和右键事件同时出现。
+    var right = document.getElementById("screen");
+    //去掉UI展示部分默认的contextmenu事件，否则会和右键事件同时出现。
     right.oncontextmenu = function(e){
       e.preventDefault();
     };

@@ -120,7 +120,7 @@ new Vue({
     this.initEditor(editor);
     this.initDragDealer();
 
-    this.activeLocalMouseControl();
+    this.activeLocalUIMouseControl();
 
     function setError(msg) {
       self.error = msg;
@@ -200,7 +200,6 @@ new Vue({
         .then(function () {
           return this.codeInsert(code);
         }.bind(this))
-        // .then(this.delayReload)
     },
     sourceToJstree: function (source) {
       var n = {}
@@ -408,27 +407,17 @@ new Vue({
         })
       }
     },
-    delayReload: function (msec) {
-      setTimeout(this.screenDumpUI, msec || 1000);
-    },
     screenDumpUIJstree: function () {
-      // this.ws.close();
       var self = this;
       this.loading = true;
       this.canvasStyle.opacity = 0.5;
-      // return this.screenRefresh()
-      //   .fail(function (ret) {
-      //     self.showAjaxError(ret);
-      //   })
-      //   .then(function () {
-          return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(self.deviceId || '-') + '/hierarchy')
-        // })
-        .fail(function (ret) {
-          self.showAjaxError(ret);
-        })
-        .then(function (source) {
+      return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(self.deviceId || '-') + '/hierarchy')
+        .done(function (source) {
           localStorage.setItem('windowHierarchy', JSON.stringify(source));
           self.drawAllNodeFromSource(source);
+        })
+        .fail(function (ret) {
+          self.showAjaxError(ret);
         })
     },
     screenDumpUI: function () {
@@ -677,12 +666,10 @@ new Vue({
       this.loading = true;
       this.codeInsert(code);
       this.codeRunDebugCode(code)
-        // .then(this.delayReload)
     },
     doClear: function () {
       var code = 'd.clear_text()'
       this.codeRunDebugCode(code)
-        // .then(this.delayReload)
         .then(function () {
           return this.codeInsert(code);
         }.bind(this))
@@ -707,7 +694,6 @@ new Vue({
       var code = 'd.click(' + x + ', ' + y + ')'
       this.codeInsert(code);
       this.codeRunDebugCode(code)
-        // .then(this.delayReload)
     },
     generateNodeSelectorParams: function (node) {
       var self = this;
@@ -850,13 +836,13 @@ new Vue({
       });
       self.drawNode(self.nodeHovered, "blue");
     },
-    activeLocalMouseControl: function () {
+    activeLocalUIMouseControl: function () {
       var self = this;
       var element = this.canvas.fg;
 
       var screen = {
         bounds: {}
-      }
+      };
 
       function calculateBounds() {
         var el = element;
@@ -873,7 +859,7 @@ new Vue({
       }
 
       function activeFinger(index, x, y, pressure) {
-        var scale = 0.5 + pressure
+        var scale = 0.5 + pressure;
         $(".finger-" + index)
           .addClass("active")
           .css("transform", 'translate3d(' + x + 'px,' + y + 'px,0)')
@@ -900,15 +886,15 @@ new Vue({
       function markPosition(pos) {
         var ctx = self.canvas.fg.getContext("2d");
         ctx.fillStyle = '#ff0000'; // red
-        ctx.beginPath()
-        ctx.arc(pos.x, pos.y, 12, 0, 2 * Math.PI)
-        ctx.closePath()
-        ctx.fill()
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 12, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
 
         ctx.fillStyle = "#fff"; // white
-        ctx.beginPath()
-        ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI)
-        ctx.closePath()
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI);
+        ctx.closePath();
         ctx.fill();
       }
 
@@ -917,10 +903,6 @@ new Vue({
         if (e.originalEvent) {
           e = e.originalEvent
         }
-        // Skip secondary click
-        // if (e.which === 3) {
-        //   return
-        // }
         e.preventDefault();
         // startMousing()
 
@@ -943,10 +925,6 @@ new Vue({
         if (e.originalEvent) {
           e = e.originalEvent
         }
-        // Skip secondary click
-        // if (e.which === 3) {
-        //   return
-        // }
         e.preventDefault();
 
         fakePinch = e.altKey;
@@ -987,10 +965,6 @@ new Vue({
         if (e.originalEvent) {
           e = e.originalEvent
         }
-        // Skip secondary click
-        // if (e.which === 3) {
-        //   return
-        // }
         e.preventDefault();
 
         var pos = coord(e);
@@ -1020,126 +994,118 @@ new Vue({
       element.addEventListener('mousemove', mouseHoverListener);
     },
     activeRemoteMouseControl: function () {
-          /**
-           * TOUCH HANDLING
-           */
-          var self = this;
-          var element = this.canvas.fg;
+      /**
+       * TOUCH HANDLING
+       */
+      var self = this;
+      var element = this.canvas.fg;
 
-          var screen = {
-              bounds: {}
-          };
+      var screen = {
+        bounds: {}
+      };
 
-          var port = this.serial.split(":")[1] ? this.serial.split(":")[1] : "7912";
-          var ws = this.wsControl = new WebSocket('ws://' + this.serial + ':' + port + '/minitouch');
-          ws.onerror = function (ev) {
-              console.log("minitouch websocket error:", ev)
-          };
-          ws.onmessage = function (ev) {
-              console.log("minitouch websocket receive message:", ev.data);
-          };
-          ws.onclose = function () {
-              console.log("minitouch websocket closed");
-              element.removeEventListener('mousedown', mouseDownListener);
-          };
-          var control =  MiniTouch.createNew(ws);
+      var port = this.serial.split(":")[1] ? this.serial.split(":")[1] : "7912";
+      var ws = this.wsControl = new WebSocket('ws://' + this.serial + ':' + port + '/minitouch');
+      ws.onerror = function (ev) {
+        console.log("minitouch websocket error:", ev)
+      };
+      ws.onmessage = function (ev) {
+        console.log("minitouch websocket receive message:", ev.data);
+      };
+      ws.onclose = function () {
+        console.log("minitouch websocket closed");
+        element.removeEventListener('mousedown', mouseDownListener);
+      };
+      var control =  MiniTouch.createNew(ws);
 
-          function calculateBounds() {
-              var el = element;
-              screen.bounds.w = el.offsetWidth;
-              screen.bounds.h = el.offsetHeight;
-              screen.bounds.x = 0;
-              screen.bounds.y = 0;
+      function calculateBounds() {
+        var el = element;
+        screen.bounds.w = el.offsetWidth;
+        screen.bounds.h = el.offsetHeight;
+        screen.bounds.x = 0;
+        screen.bounds.y = 0;
 
-              while (el.offsetParent) {
-                  screen.bounds.x += el.offsetLeft;
-                  screen.bounds.y += el.offsetTop;
-                  el = el.offsetParent
-              }
-          }
-
-          function activeFinger(index, x, y, pressure) {
-              var scale = 0.5 + pressure
-              $(".finger-" + index)
-                  .addClass("active")
-                  .css("transform", 'translate3d(' + x + 'px,' + y + 'px,0)')
-          }
-
-          function mouseDownListener(event) {
-              var e = event;
-              if (e.originalEvent) {
-                  e = e.originalEvent
-              }
-              // Skip secondary click
-              if (e.which === 3 || e.which === 2) {
-                  return
-              }
-              e.preventDefault();
-
-              fakePinch = e.altKey;
-              calculateBounds();
-
-              var x = e.pageX - screen.bounds.x;
-              var y = e.pageY - screen.bounds.y;
-              var pressure = 0.5;
-              activeFinger(0, e.pageX, e.pageY, pressure);
-
-              var scaled = coords(screen.bounds.w, screen.bounds.h, x, y, self.rotation);
-              control.touchDown(0, scaled.xP, scaled.yP, pressure);
-              control.touchCommit();
-
-              element.addEventListener('mousemove', mouseMoveListener);
-              document.addEventListener('mouseup', mouseUpListener);
-          }
-
-          function mouseMoveListener(event) {
-              var e = event;
-              if (e.originalEvent) {
-                  e = e.originalEvent
-              }
-              // Skip secondary click
-              // if (e.which === 3) {
-              //     return
-              // }
-              e.preventDefault();
-
-              var pressure = 0.5;
-              activeFinger(0, e.pageX, e.pageY, pressure);
-              var x = e.pageX - screen.bounds.x;
-              var y = e.pageY - screen.bounds.y;
-              var scaled = coords(screen.bounds.w, screen.bounds.h, x, y, self.rotation);
-              control.touchMove(0, scaled.xP, scaled.yP, pressure);
-              control.touchCommit();
-          }
-
-          function mouseUpListener(event) {
-              var e = event;
-              if (e.originalEvent) {
-                  e = e.originalEvent
-              }
-              // Skip secondary click
-              // if (e.which === 3) {
-              //     return
-              // }
-              e.preventDefault();
-
-              control.touchUp(0);
-              control.touchCommit();
-              stopMousing()
-          }
-
-          function stopMousing() {
-              element.removeEventListener('mousemove', mouseMoveListener);
-              document.removeEventListener('mouseup', mouseUpListener);
-              deactiveFinger(0);
-          }
-
-          function deactiveFinger(index) {
-            $(".finger-" + index).removeClass("active")
-          }
-
-          /* bind listeners */
-          element.addEventListener('mousedown', mouseDownListener);
+        while (el.offsetParent) {
+          screen.bounds.x += el.offsetLeft;
+          screen.bounds.y += el.offsetTop;
+          el = el.offsetParent
+        }
       }
+
+      function activeFinger(index, x, y, pressure) {
+        var scale = 0.5 + pressure;
+        $(".finger-" + index)
+          .addClass("active")
+          .css("transform", 'translate3d(' + x + 'px,' + y + 'px,0)')
+      }
+
+      function mouseDownListener(event) {
+        var e = event;
+        if (e.originalEvent) {
+          e = e.originalEvent
+        }
+        // Skip secondary click
+        if (e.which === 3 || e.which === 2) {
+          return
+        }
+        e.preventDefault();
+
+        fakePinch = e.altKey;
+        calculateBounds();
+
+        var x = e.pageX - screen.bounds.x;
+        var y = e.pageY - screen.bounds.y;
+        var pressure = 0.5;
+        activeFinger(0, e.pageX, e.pageY, pressure);
+
+        var scaled = coords(screen.bounds.w, screen.bounds.h, x, y, self.rotation);
+        control.touchDown(0, scaled.xP, scaled.yP, pressure);
+        control.touchCommit();
+
+        element.addEventListener('mousemove', mouseMoveListener);
+        document.addEventListener('mouseup', mouseUpListener);
+      }
+
+      function mouseMoveListener(event) {
+        var e = event;
+        if (e.originalEvent) {
+          e = e.originalEvent
+        }
+        e.preventDefault();
+
+        var pressure = 0.5;
+        activeFinger(0, e.pageX, e.pageY, pressure);
+        var x = e.pageX - screen.bounds.x;
+        var y = e.pageY - screen.bounds.y;
+        var scaled = coords(screen.bounds.w, screen.bounds.h, x, y, self.rotation);
+        control.touchMove(0, scaled.xP, scaled.yP, pressure);
+        control.touchCommit();
+      }
+
+      function mouseUpListener(event) {
+        var e = event;
+        if (e.originalEvent) {
+          e = e.originalEvent
+        }
+        e.preventDefault();
+
+        control.touchUp(0);
+        control.touchCommit();
+        stopMousing()
+      }
+
+      function stopMousing() {
+        element.removeEventListener('mousemove', mouseMoveListener);
+        document.removeEventListener('mouseup', mouseUpListener);
+        deactiveFinger(0);
+      }
+
+      function deactiveFinger(index) {
+        $(".finger-" + index).removeClass("active")
+      }
+
+      /* bind listeners */
+      element.addEventListener('mousedown', mouseDownListener);
+    }
   }
 });
