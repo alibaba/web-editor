@@ -73,3 +73,91 @@ function b64toBlob(b64Data, contentType, sliceSize) {
     type: contentType
   });
 }
+
+var MiniTouch = {
+  createNew: function(ws) {
+      // ws: Websocket connection communication with minitouch
+    var control = {};
+
+    function sendJSON(obj) {
+        ws.send(JSON.stringify(obj))
+    }
+
+    // control.coords = function(w, h, x, y, rotation) {
+    //   console.log(w, h, x, y, rotation)
+    //   return {
+    //     xP: x / w,
+    //     yP: y / h,
+    //   }
+    // };
+
+    control.touchDown = function(index, xP, yP, pressure) {
+        sendJSON({
+            operation: 'd',
+            index: index,
+            pressure: pressure,
+            xP: xP,
+            yP: yP,
+        })
+    };
+
+    control.touchWait = function(mseconds) {
+        sendJSON({ operation: 'w', milliseconds: mseconds })
+    };
+
+    control.touchCommit = function() {
+        sendJSON({ operation: 'c' })
+    };
+
+    control.touchMove = function(index, xP, yP, pressure) {
+        sendJSON({
+            operation: 'm',
+            index: index,
+            pressure: pressure,
+            xP: xP,
+            yP: yP,
+        })
+    };
+
+    control.touchUp = function(index) {
+        sendJSON({ operation: 'u', index: index })
+    };
+
+    return control;
+  }
+};
+function coords(boundingW, boundingH, relX, relY, rotation) {
+  var w, h, x, y;
+
+  switch (rotation) {
+    case 0:
+        w = boundingW
+        h = boundingH
+        x = relX
+        y = relY
+        break
+    case 90:
+        w = boundingH
+        h = boundingW
+        x = boundingH - relY
+        y = relX
+        break
+    case 180:
+        w = boundingW
+        h = boundingH
+        x = boundingW - relX
+        y = boundingH - relY
+        break
+    case 270:
+        w = boundingH
+        h = boundingW
+        x = relY
+        y = boundingW - relX
+        break
+  }
+
+  return {
+    xP: x / w,
+    yP: y / h,
+  }
+}

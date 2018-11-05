@@ -78,8 +78,12 @@
           <div class="panel-heading">
             <i class="fa fa-empire" aria-hidden="true"></i> Selected Element
             <span class="pull-right">
-              <button :disabled="loading" class="button button-primary button-tiny button-rounded" v-on:click="screenDumpUI()">
-                <i class="fa fa-refresh"></i> Reload
+              <button :disabled="loading" class="button button-primary button-tiny button-rounded" v-on:click="screenDumpUIJstree()">
+                <i class="fa fa-refresh"></i> DumpUI
+              </button>
+              <button :disabled="loading" class="button button-primary button-tiny button-rounded" v-on:click="freezeHandler()"
+                v-bind:class="{ 'text-line-through': isFreeze }">
+                <i class="fa fa-snowflake-o"></i> Freeze
               </button>
             </span>
           </div>
@@ -299,5 +303,14 @@
   ga('create', 'UA-81205425-3', 'auto');
   ga('send', 'pageview');
 </script>
+<script>
+  window.onload = function(){
+    var right = document.getElementById("app");
+    //去掉默认的contextmenu事件，否则会和右键事件同时出现。
+    right.oncontextmenu = function(e){
+      e.preventDefault();
+    };
 
+  }
+</script>
 </html>

@@ -31,7 +31,7 @@ body {
   left: -3mm;
   opacity: 0.7;
   pointer-events: none;
-  background: white;
+  background: red;
   /*#464646;*/
   /*background: red;*/
   display: none;
@@ -202,3 +202,12 @@ i.inactive {
 .cursor-pointer {
   cursor: pointer;
 }
+
+.text-line-through{
+  text-decoration: line-through;
+}
+.text-line-through:link    {text-decoration: line-through;}
+.text-line-through:visited {text-decoration: line-through;}
+.text-line-through:hover   {text-decoration: line-through;}
+.text-line-through:active  {text-decoration: line-through;}
+.text-line-through:focus  {text-decoration: line-through;}
