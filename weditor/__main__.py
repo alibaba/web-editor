@@ -236,12 +236,15 @@ class DeviceConnectHandler(BaseHandler):
         platform = self.get_argument("platform").lower()
         device_url = self.get_argument("deviceUrl")
         id = str(uuid.uuid4())
+        ip = ""
         try:
             if platform == 'android':
                 import uiautomator2 as u2
                 d = u2.connect(device_url)
                 d.platform = 'android'
                 cached_devices[id] = d
+                ip = d.shell("ifconfig wlan0")
+                ip = ip[0].split()[2]
             elif platform == 'ios':
                 import atx
                 d = atx.connect(device_url)
@@ -260,6 +263,7 @@ class DeviceConnectHandler(BaseHandler):
             self.write({
                 "deviceId": id,
                 'success': True,
+                "ip": ip,
             })
 
 

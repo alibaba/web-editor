@@ -182,6 +182,7 @@ new Vue({
         .then(function (ret) {
           console.log(ret);
           this.deviceId = ret.deviceId;
+          this.serial = ret.ip;
           // this.hold();
           this.activeRemoteMouseControl();
           this.loadLiveScreen();
@@ -202,9 +203,9 @@ new Vue({
         }.bind(this))
     },
     sourceToJstree: function (source) {
-      var n = {}
+      var n = {};
       n.id = source.id;
-      n.text = source.type || source.className
+      n.text = source.type || source.className;
       if (source.name) {
         n.text += " - " + source.name;
       }
