@@ -236,7 +236,7 @@ class DeviceConnectHandler(BaseHandler):
         platform = self.get_argument("platform").lower()
         device_url = self.get_argument("deviceUrl")
         id = str(uuid.uuid4())
-        ip = ""
+        serial = ""
         try:
             if platform == 'android':
                 import uiautomator2 as u2
