@@ -82,7 +82,7 @@
                 <i class="fa fa-refresh"></i> DumpUI
               </button>
               <button :disabled="loading" class="button button-primary button-tiny button-rounded" v-on:click="freezeHandler()"
-                v-bind:class="{ 'text-line-through': isNotFreeze }">
+                v-bind:class="{ 'text-line-through': !isFreeze }">
                 <i class="fa fa-snowflake-o"></i> Freeze
               </button>
             </span>

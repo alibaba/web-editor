@@ -45,7 +45,7 @@ new Vue({
     ws: null,
     wsControl:null,
     rotation: null,
-    isNotFreeze: true
+    isFreeze: false
   },
   watch: {
     platform: function (newval) {
@@ -182,12 +182,11 @@ new Vue({
         .then(function (ret) {
           console.log(ret);
           this.deviceId = ret.deviceId;
-          if(ret.ip && this.platform == 'Android'){
-            var port = this.serial.split(":")[1] ? ":" + this.serial.split(":")[1] : "";
-            this.serial = ret.ip + port;
+          if(ret.serial && this.platform == 'Android'){
+            this.serial = ret.serial;
           }
           if(this.platform == 'iOS'){
-            this.isNotFreeze = false;
+            this.isFreeze = true;
           } else{
             this.activeRemoteMouseControl();
             this.loadLiveScreen();
@@ -589,7 +588,11 @@ new Vue({
         this.screenDumpUI();
         return
       }
-      if(this.isNotFreeze){
+      if(this.isFreeze){
+        this.activeRemoteMouseControl();
+        this.loadLiveScreen();
+        this.isFreeze = false;
+      } else {
         if(this.ws){
           this.ws.close();
         }
@@ -597,11 +600,7 @@ new Vue({
           this.wsControl.close();
         }
         this.screenDumpUI();
-        this.isNotFreeze = false;
-      } else {
-        this.activeRemoteMouseControl();
-        this.loadLiveScreen();
-        this.isNotFreeze = true;
+        this.isFreeze = true;
       }
     },
     codeRunDebugCode: function (code) {

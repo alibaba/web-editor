@@ -243,8 +243,7 @@ class DeviceConnectHandler(BaseHandler):
                 d = u2.connect(device_url)
                 d.platform = 'android'
                 cached_devices[id] = d
-                ip = d.shell("ifconfig wlan0")
-                ip = ip[0].split()[2]
+                serial = d._host + ":" + str(d._port)
             elif platform == 'ios':
                 import atx
                 d = atx.connect(device_url)
@@ -263,7 +262,7 @@ class DeviceConnectHandler(BaseHandler):
             self.write({
                 "deviceId": id,
                 'success': True,
-                "ip": ip,
+                "serial": serial,
             })
 
 
