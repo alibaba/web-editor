@@ -414,6 +414,13 @@ new Vue({
         })
       }
     },
+    dumpUI: function () {
+      if(this.isFreeze == false){
+        this.screenDumpUIJstree();
+      } else {
+        this.screenDumpUI();
+      }
+    },
     screenDumpUIJstree: function () {
       var self = this;
       this.loading = true;
