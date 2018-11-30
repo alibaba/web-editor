@@ -7,7 +7,7 @@ WEditor
 .. image:: https://travis-ci.org/openatx/weditor.svg?branch=master
     :target: https://travis-ci.org/openatx/weditor
 
-This project is subproject for smart phone test framework `AutomatorX <https://github.com/NetEaseGame/AutomatorX>`_
+This project is subproject for smart phone test framework `uiautomator2 <https://github.com/openatx/uiautomator2>`_ and `facebook-wda <https://github.com/openatx/facebook-wda>`_
 for easily use web browser to edit atx scripts.
 This project is hosted in `github.com <https://github.com/openatx/weditor>`_
 
@@ -16,7 +16,7 @@ Installation
 
 .. code-block:: bash
 
-    pip install --pre --upgrade weditor
+    pip install --upgrade weditor
 
 Usage
 -----
