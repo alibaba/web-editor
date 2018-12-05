@@ -231,6 +231,58 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
         print("Websocket closed")
 
 
+class _AndroidDevice(object):
+    def __init__(self, device_url):
+        import uiautomator2 as u2
+        d = u2.connect(device_url)
+        self._d = d
+
+    def screenshot(self):
+        return self._d.screenshot()
+
+    def dump_hierarchy(self):
+        return uidumplib.get_android_hierarchy(self._d)
+
+    @property
+    def device(self):
+        return self._d
+
+
+class _AppleDevice(object):
+    def __init__(self, device_url):
+        import wda
+        c = wda.Client(device_url)
+        self._client = c
+        self.__scale = c.session().scale
+
+    def screenshot(self):
+        return self._client.screenshot(format='pillow')
+
+    def dump_hierarchy(self):
+        return uidumplib.get_ios_hierarchy(self._client, self.__scale)
+
+    @property
+    def device(self):
+        return self._client
+
+
+class _GameDevice(object):
+    def __init__(self, device_url):
+        import neco
+        d = neco.connect(device_url)
+        self._d = d
+
+    def screenshot(self):
+        return self._d.screenshot()
+
+    def dump_hierarchy(self):
+        return self._d.dump_hierarchy()
+
+    @property
+    def device(self):
+        return self._d
+
+
 class DeviceConnectHandler(BaseHandler):
     def post(self):
         platform = self.get_argument("platform").lower()
@@ -238,18 +290,14 @@ class DeviceConnectHandler(BaseHandler):
         id = str(uuid.uuid4())
         try:
             if platform == 'android':
-                import uiautomator2 as u2
-                d = u2.connect(device_url)
-                d.platform = 'android'
-                cached_devices[id] = d
+                cached_devices[id] = _AndroidDevice(device_url)
             elif platform == 'ios':
-                import atx
-                d = atx.connect(device_url)
-                cached_devices[id] = d
+                cached_devices[id] = _AppleDevice(device_url)
             else:
-                import neco
-                d = neco.connect(device_url or 'localhost')
-                cached_devices[id] = d
+                cached_devices[id] = _GameDevice(device_url or "localhost")
+                # import neco
+                # d = neco.connect(device_url or 'localhost')
+                # cached_devices[id] = d
         except Exception as e:
             self.set_status(430, "Connect Error")
             self.write({
@@ -266,15 +314,16 @@ class DeviceConnectHandler(BaseHandler):
 class DeviceHierarchyHandler(BaseHandler):
     def get(self, device_id):
         d = get_device(device_id)
-        if d.platform == 'ios':
-            self.write(uidumplib.get_ios_hierarchy(d))
-        elif d.platform == 'android':
-            self.write(uidumplib.get_android_hierarchy(d))
-        elif d.platform == 'neco':
-            dump = d.dump_hierarchy()
-            self.write(dump)
-        else:
-            self.write("Unknown platform")
+        self.write(d.dump_hierarchy())
+        # if d.platform == 'ios':
+        #     self.write(uidumplib.get_ios_hierarchy(d))
+        # elif d.platform == 'android':
+        #     self.write(uidumplib.get_android_hierarchy(d))
+        # elif d.platform == 'neco':
+        #     dump = d.dump_hierarchy()
+        #     self.write(dump)
+        # else:
+        #     self.write("Unknown platform")
 
 
 class DeviceCodeDebugHandler(BaseHandler):
@@ -295,10 +344,10 @@ class DeviceCodeDebugHandler(BaseHandler):
             compiled_code = compile(code, "<string>", "exec")
         try:
             if is_eval:
-                ret = eval(code, {'d': d})
+                ret = eval(code, {'d': d.device})
                 buffer.write((">>> " + repr(ret) + "\n").encode('utf-8'))
             else:
-                exec(compiled_code, {'d': d})
+                exec(compiled_code, {'d': d.device})
         except:
             buffer.write(traceback.format_exc().encode('utf-8'))
         finally:

@@ -27,6 +27,7 @@ sample_android_page_xml = '''<?xml version="1.0" ?>
 </hierarchy>
 '''
 
+
 def parse_bounds(text):
     m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', text)
     if m is None:
@@ -34,15 +35,19 @@ def parse_bounds(text):
     (lx, ly, rx, ry) = map(int, m.groups())
     return dict(x=lx, y=ly, width=rx-lx, height=ry-ly)
 
+
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
+
 
 def str2int(v):
     return int(v)
 
+
 def convstr(v):
     return v
     # return v.encode('utf-8')
+
 
 __alias = {
     'class': 'className',
@@ -79,6 +84,7 @@ __parsers = {
     # iOS && Android
     'enabled': str2bool,
 }
+
 
 def parse_uiautomator_node(node):
     ks = {}
@@ -122,17 +128,18 @@ def get_android_hierarchy(d):
     return travel(root)
 
 
-def get_ios_hierarchy(d):
-    sourcejson = d._wda.source(format='json')
+def get_ios_hierarchy(d, scale):
+    sourcejson = d.source(format='json')
+
     def travel(node):
         node['id'] = str(uuid.uuid4())
         if node.get('rect'):
             rect = node['rect']
             nrect = {}
             for k, v in rect.items():
-                nrect[k] = v*d.scale
+                nrect[k] = v * scale
             node['rect'] = nrect
-            
+
         for child in node.get('children', []):
             travel(child)
         return node
