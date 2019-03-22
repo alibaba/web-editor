@@ -1,6 +1,7 @@
 tornado>=4.3
 six
 pillow
+facebook-wda>=0.2.2
 
 # py3 have buildin concurrent.futures 
 futures>=3.0.5 ; python_version <= '2.7'
