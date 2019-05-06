@@ -25,3 +25,6 @@ FOOTER
 ```
 
 See example: https://codepen.io/codeskyblue/pen/mYdjGb
+
+## 发布到PYPI
+目前先打`git tag`, push到github之后，再通过travis发布到pypi上
