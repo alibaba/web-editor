@@ -154,6 +154,7 @@ section {
   display: flex;
   flex: 1;
   border-top: 1px solid black;
+  min-height: 0%;
 }
 
 #toolbar {
