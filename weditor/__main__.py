@@ -1,34 +1,35 @@
 #! /usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
-import os
-import sys
-import platform
-import time
-import json
-import hashlib
 import argparse
-import signal
 import base64
-import webbrowser
+import hashlib
+import io
+import json
+import os
+import platform
+import signal
+import sys
+import time
 import traceback
 import uuid
-from io import BytesIO
+import webbrowser
+# `pip install futures` for python2
+from concurrent.futures import ThreadPoolExecutor
 
 import six
+import tornado.escape
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
-import tornado.escape
 from tornado import gen
+from tornado.concurrent import run_on_executor
 from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
-from tornado.concurrent import run_on_executor
-# `pip install futures` for python2
-from concurrent.futures import ThreadPoolExecutor
+
+from weditor import uidumplib
 
 try:
     import Queue as queue
@@ -41,8 +42,6 @@ try:
 except:
     import subprocess
     from subprocess import PIPE
-
-from weditor import uidumplib
 
 
 __version__ = '0.0.3'
@@ -133,7 +132,7 @@ class DeviceScreenshotHandler(BaseHandler):
         print("SN", serial)
         try:
             d = get_device(serial)
-            buffer = BytesIO()
+            buffer = io.BytesIO()
             d.screenshot().convert("RGB").save(buffer, format='JPEG')
             b64data = base64.b64encode(buffer.getvalue())
             response = {
@@ -295,9 +294,6 @@ class DeviceConnectHandler(BaseHandler):
                 cached_devices[id] = _AppleDevice(device_url)
             else:
                 cached_devices[id] = _GameDevice(device_url or "localhost")
-                # import neco
-                # d = neco.connect(device_url or 'localhost')
-                # cached_devices[id] = d
         except Exception as e:
             self.set_status(430, "Connect Error")
             self.write({
@@ -315,48 +311,61 @@ class DeviceHierarchyHandler(BaseHandler):
     def get(self, device_id):
         d = get_device(device_id)
         self.write(d.dump_hierarchy())
-        # if d.platform == 'ios':
-        #     self.write(uidumplib.get_ios_hierarchy(d))
-        # elif d.platform == 'android':
-        #     self.write(uidumplib.get_android_hierarchy(d))
-        # elif d.platform == 'neco':
-        #     dump = d.dump_hierarchy()
-        #     self.write(dump)
-        # else:
-        #     self.write("Unknown platform")
+
+
+class StringBuffer():
+    def __init__(self):
+        self.encoding = 'utf-8'
+        self.buf = io.BytesIO()
+
+    def write(self, data):
+        if isinstance(data, six.string_types):
+            data = data.encode(self.encoding)
+        self.buf.write(data)
+
+    def getvalue(self):
+        return self.buf.getvalue().decode(self.encoding)
 
 
 class DeviceCodeDebugHandler(BaseHandler):
-    def post(self, device_id):
-        d = get_device(device_id)
-        code = self.get_argument('code')
-        start = time.time()
-        buffer = BytesIO()
+    def run(self, device, code):
+        buffer = StringBuffer()
         sys.stdout = buffer
         sys.stderr = buffer
 
-        is_eval = True
-        compiled_code = None
         try:
-            compiled_code = compile(code, "<string>", "eval")
-        except SyntaxError:
-            is_eval = False
-            compiled_code = compile(code, "<string>", "exec")
-        try:
+            is_eval = True
+            compiled_code = None
+            try:
+                compiled_code = compile(code, "<string>", "eval")
+            except SyntaxError:
+                is_eval = False
+                compiled_code = compile(code, "<string>", "exec")
+
             if is_eval:
-                ret = eval(code, {'d': d.device})
-                buffer.write((">>> " + repr(ret) + "\n").encode('utf-8'))
+                ret = eval(code, {'d': device})
+                buffer.write((">>> " + repr(ret) + "\n"))
             else:
-                exec(compiled_code, {'d': d.device})
+                exec(compiled_code, {'d': device})
         except:
-            buffer.write(traceback.format_exc().encode('utf-8'))
+            buffer.write(traceback.format_exc())
         finally:
             sys.stdout = sys.__stdout__
             sys.stderr = sys.__stderr__
+
+        return buffer.getvalue()
+
+    def post(self, device_id):
+        d = get_device(device_id)
+        code = self.get_argument('code')
+
+        start = time.time()
+        output = self.run(d.device, code)
+
         self.write({
             "success": True,
             "duration": int((time.time()-start)*1000),
-            "content": buffer.getvalue().decode('utf-8'),
+            "content": output,
         })
 
 
