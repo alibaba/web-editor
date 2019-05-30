@@ -43,7 +43,6 @@ except:
     import subprocess
     from subprocess import PIPE
 
-
 __version__ = '0.0.3'
 
 try:
@@ -144,9 +143,7 @@ class DeviceScreenshotHandler(BaseHandler):
         except EnvironmentError as e:
             traceback.print_exc()
             self.set_status(430, "Environment Error")
-            self.write({
-                "description": str(e)
-            })
+            self.write({"description": str(e)})
 
 
 class MainHandler(BaseHandler):
@@ -156,6 +153,7 @@ class MainHandler(BaseHandler):
 
 class BuildWSHandler(tornado.websocket.WebSocketHandler):
     executor = ThreadPoolExecutor(max_workers=4)
+
     # proc = None
 
     def open(self):
@@ -180,7 +178,10 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             start_time = time.time()
 
             self.proc = subprocess.Popen([sys.executable, "-u"],
-                                         env=env, stdout=PIPE, stderr=subprocess.STDOUT, stdin=PIPE)
+                                         env=env,
+                                         stdout=PIPE,
+                                         stderr=subprocess.STDOUT,
+                                         stdin=PIPE)
             self.proc.stdin.write(code)
             self.proc.stdin.close()
 
@@ -194,7 +195,10 @@ class BuildWSHandler(tornado.websocket.WebSocketHandler):
             duration = time.time() - start_time
             ret = {
                 "buffer": "",
-                "result": {"exitCode": exit_code, "duration": int(duration)*1000}
+                "result": {
+                    "exitCode": exit_code,
+                    "duration": int(duration) * 1000
+                }
             }
             gqueue.put((self, ret))
             time.sleep(3)  # wait until write done
@@ -262,7 +266,7 @@ class _AppleDevice(object):
 
     @property
     def device(self):
-        return self._client
+        return self._client.session()
 
 
 class _GameDevice(object):
@@ -364,7 +368,7 @@ class DeviceCodeDebugHandler(BaseHandler):
 
         self.write({
             "success": True,
-            "duration": int((time.time()-start)*1000),
+            "duration": int((time.time() - start) * 1000),
             "content": output,
         })
 
@@ -441,29 +445,34 @@ def create_shortcut():
     ilist = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_DESKTOP)
     dtpath = shell.SHGetPathFromIDList(ilist).decode('utf-8')
 
-    shortcut = pythoncom.CoCreateInstance(
-        shell.CLSID_ShellLink, None,
-        pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink)
+    shortcut = pythoncom.CoCreateInstance(shell.CLSID_ShellLink, None,
+                                          pythoncom.CLSCTX_INPROC_SERVER,
+                                          shell.IID_IShellLink)
     launch_path = sys.executable
     shortcut.SetPath(launch_path)
     shortcut.SetArguments("-m weditor")
     shortcut.SetDescription(launch_path)
     shortcut.SetIconLocation(sys.executable, 0)
-    shortcut.QueryInterface(
-        pythoncom.IID_IPersistFile).Save(dtpath + "\\WEditor.lnk", 0)
+    shortcut.QueryInterface(pythoncom.IID_IPersistFile).Save(
+        dtpath + "\\WEditor.lnk", 0)
     print("Shortcut created. " + dtpath + "\\WEditor.lnk")
 
 
 def main():
     ap = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    ap.add_argument('-q', '--quiet', action='store_true',
+    ap.add_argument('-q',
+                    '--quiet',
+                    action='store_true',
                     help='quite mode, no open new browser')
-    ap.add_argument('--debug', action='store_true',
-                    help='open debug mode')
-    ap.add_argument('--shortcut', action='store_true',
+    ap.add_argument('--debug', action='store_true', help='open debug mode')
+    ap.add_argument('--shortcut',
+                    action='store_true',
                     help='create shortcut in desktop')
-    ap.add_argument('-p', '--port', type=int, default=17310,
+    ap.add_argument('-p',
+                    '--port',
+                    type=int,
+                    default=17310,
                     help='local listen port for weditor')
 
     args = ap.parse_args()
@@ -475,7 +484,7 @@ def main():
 
     if open_browser:
         # webbrowser.open(url, new=2)
-        webbrowser.open('http://localhost:'+str(args.port), new=2)
+        webbrowser.open('http://localhost:' + str(args.port), new=2)
     run_web(args.debug, args.port)
 
 
