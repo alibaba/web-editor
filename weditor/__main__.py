@@ -29,6 +29,7 @@ from tornado.concurrent import run_on_executor
 from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
 
+from logzero import logger
 from weditor import uidumplib
 
 try:
@@ -128,7 +129,7 @@ class VersionHandler(BaseHandler):
 
 class DeviceScreenshotHandler(BaseHandler):
     def get(self, serial):
-        print("SN", serial)
+        logger.info("Serial: %s", serial)
         try:
             d = get_device(serial)
             buffer = io.BytesIO()
@@ -291,6 +292,7 @@ class DeviceConnectHandler(BaseHandler):
         platform = self.get_argument("platform").lower()
         device_url = self.get_argument("deviceUrl")
         id = str(uuid.uuid4())
+
         try:
             if platform == 'android':
                 cached_devices[id] = _AndroidDevice(device_url)
@@ -298,11 +300,18 @@ class DeviceConnectHandler(BaseHandler):
                 cached_devices[id] = _AppleDevice(device_url)
             else:
                 cached_devices[id] = _GameDevice(device_url or "localhost")
-        except Exception as e:
-            self.set_status(430, "Connect Error")
+        except RuntimeError as e:
+            self.set_status(410)  # 410 Gone
             self.write({
                 "success": False,
-                "description": traceback.format_exc().encode('utf-8'),
+                "description": str(e),
+            })
+        except Exception as e:
+            logger.warning("device connect error: %s", e)
+            self.set_status(410)  # 410 Gone
+            self.write({
+                "success": False,
+                "description": traceback.format_exc(),
             })
         else:
             self.write({

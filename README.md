@@ -10,6 +10,8 @@ This project is hosted in <https://github.com/openatx/weditor>
 Only tested in `Google Chrome`, _IE_ seems not working well.
 
 ## Installation
+**Require Python3.5+**
+
 ```
 pip install -U weditor
 ```
