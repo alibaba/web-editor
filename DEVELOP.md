@@ -28,3 +28,12 @@ See example: https://codepen.io/codeskyblue/pen/mYdjGb
 
 ## 发布到PYPI
 目前先打`git tag`, push到github之后，再通过travis发布到pypi上
+
+## References
+- https://www.jstree.com/
+
+# LocalStorage
+store keys:
+
+- windowHierarchy: JSON.stringified data
+- screenshotBase64

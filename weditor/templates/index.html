@@ -4,9 +4,9 @@
 <head>
   <meta charset="utf-8" />
   <title>WEditor</title>
-  <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
   <link rel="stylesheet" href="//cdn.jsdelivr.net/bootstrap/3.3.7/css/bootstrap.min.css">
-  <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+
   <link rel="stylesheet" type="text/css" href="/static/libs/css/buttons.css">
   <link rel="stylesheet" type="text/css" href="/static/libs/fontawesome/css/font-awesome.min.css">
   <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.select/1.12.2/css/bootstrap-select.min.css">
@@ -19,8 +19,8 @@
   <div id="app">
     <nav class="navbar navbar-default" style="margin-bottom: 0px">
       <div class="navbar-header">
-        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1"
-          aria-expanded="false">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+          data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
           <span class="sr-only">Toggle navigation</span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
@@ -78,14 +78,16 @@
           <div class="panel-heading">
             <i class="fa fa-empire" aria-hidden="true"></i> Selected Element
             <span class="pull-right">
-              <button :disabled="loading" class="button button-primary button-tiny button-rounded" v-on:click="screenDumpUI()">
+              <button :disabled="loading" class="button button-primary button-tiny button-rounded"
+                v-on:click="screenDumpUI()">
                 <i class="fa fa-refresh"></i> Reload
               </button>
             </span>
           </div>
           <div class="panel-body">
             <div class="text-center">
-              <button class="btn btn-default btn-sm" :disabled="!nodeSelected" v-on:click="doTap(nodeSelected)">Tap</button>
+              <button class="btn btn-default btn-sm" :disabled="!nodeSelected"
+                v-on:click="doTap(nodeSelected)">Tap</button>
               <button class="btn btn-default btn-sm" v-on:click="doSendKeys('')">Send Keys</button>
               <!-- <button class="btn btn-default btn-sm" v-on:click="doClear()">Clear Text</button> -->
             </div>
@@ -180,12 +182,12 @@
               </tr>
               <tr>
                 <td>xpath(beta)</td>
-                <td contenteditable v-text="elemXpath"></td>
+                <td contenteditable v-text="elemXPathLite"></td>
               </tr>
               <tr>
                 <td>position
-                  <i @click="showCursorPercent = !showCursorPercent" :class="{'inactive': showCursorPercent}" class="fa fa-percent cursor-pointer"
-                    aria-hidden="true"></i>
+                  <i @click="showCursorPercent = !showCursorPercent" :class="{'inactive': showCursorPercent}"
+                    class="fa fa-percent cursor-pointer" aria-hidden="true"></i>
                 </td>
                 <td>
                   <span title="双击复制" @dblclick="copyToClipboard('('+cursorValue.x+', '+cursorValue.y+')')">
@@ -212,7 +214,8 @@
           </pre>
           <!-- <div class="panel-body"> -->
           <div>
-            <button class="btn btn-default btn-sm" v-if="!codeRunning" v-on:click="codeRunDebugCode(editor.getValue())">运行
+            <button class="btn btn-default btn-sm" v-if="!codeRunning"
+              v-on:click="codeRunDebugCode(editor.getValue())">运行
               <small>Ctrl+Enter</small>
             </button>
             <span class="btn btn-default btn-sm" v-if="codeRunning">运行中</span>
@@ -280,6 +283,8 @@
 <script src="//cdn.jsdelivr.net/npm/jstree@3.3.4/dist/jstree.min.js"></script>
 
 <script src="{{static_url('libs/vue-2.5.16/vue.js')}}"></script>
+<script src="//unpkg.com/element-ui/lib/index.js"></script>
+
 <script src="{{static_url('js/common.js')}}"></script>
 <script src="{{static_url('js/index.js')}}"></script>
 

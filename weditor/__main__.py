@@ -10,6 +10,7 @@ import io
 import json
 import os
 import platform
+import socket
 import signal
 import sys
 import time
@@ -425,13 +426,19 @@ def consume_queue():
             yield gen.sleep(.5)
 
 
+def current_ip():
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+
+
 def run_web(debug=False, port=17310):
     application = make_app({
         'static_path': os.path.join(__dir__, 'static'),
         'template_path': os.path.join(__dir__, 'templates'),
         'debug': debug,
     })
-    print('listen port', port)
+    print('listening on http://%s:%d' % (current_ip(), port))
     signal.signal(signal.SIGINT, signal_handler)
     application.listen(port)
     tornado.ioloop.PeriodicCallback(try_exit, 100).start()
@@ -474,7 +481,10 @@ def main():
                     '--quiet',
                     action='store_true',
                     help='quite mode, no open new browser')
-    ap.add_argument('--debug', action='store_true', help='open debug mode')
+    ap.add_argument('-d',
+                    '--debug',
+                    action='store_true',
+                    help='open debug mode')
     ap.add_argument('--shortcut',
                     action='store_true',
                     help='create shortcut in desktop')
