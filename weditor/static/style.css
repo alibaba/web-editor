@@ -11,6 +11,10 @@
   color: green;
 }
 
+.color-gray {
+  color: gray;
+}
+
 html,
 body {
   height: 100%;
@@ -54,7 +58,7 @@ body {
   /*height: 100%;*/
   display: flex;
   flex-direction: column;
-  width: 800px;
+  width: 500px;
 }
 
 div.middle {
@@ -137,10 +141,11 @@ section {
 
 #console>pre {
   font-family: "Courier New";
-  font-size: 13px;
-  padding: 2px 5px;
+  font-size: 11px;
+  padding: 0px 0px;
   /*height: 100%;*/
   border: 0px;
+  white-space: pre-wrap;
 }
 
 #console>img {

@@ -65,11 +65,8 @@
             <i class="fa fa-chevron-left"></i> Back</button>
           <button class="btn" disabled="true">Menu</button>
         </section>
-        <div class="horizon-gap"></div>
-        <div id="console">
-          <img v-if="codeRunning && !console.content" src="/static/running.svg">
-          <pre v-text="console.content"></pre>
-        </div>
+        <!-- <div class="horizon-gap"></div> -->
+
       </div>
       <div id="vertical-gap1" class="handle vertical-gap"></div>
 
@@ -209,43 +206,61 @@
               <input v-model="autoCopy" type="checkbox"> 自动复制代码
             </label>
           </div>
-          <pre class="editor-container">
-            <div id="editor"></div>
-          </pre>
-          <!-- <div class="panel-body"> -->
-          <div>
-            <button class="btn btn-default btn-sm" v-if="!codeRunning"
-              v-on:click="codeRunDebugCode(editor.getValue())">运行
-              <small>Ctrl+Enter</small>
-            </button>
-            <span class="btn btn-default btn-sm" v-if="codeRunning">运行中</span>
-          </div>
-          <!-- </div> -->
+
         </div>
       </div>
       <div class="vertical-gap"></div>
       <div id="right">
         <div class="panel panel-default" style="margin-bottom: 0px; border-bottom: 0px">
           <div class="panel-heading">
-            <span class="glyphicon glyphicon-tree-deciduous"></span> Hierarchy
+            <span class="glyphicon glyphicon-music"></span> Coding
           </div>
         </div>
-        <div class="input-group input-group-sm">
-          <div class="input-group-btn">
-            <button class="btn btn-default">
-              <i class="glyphicon glyphicon-plus"></i>
-            </button>
-          </div>
-          <input id="jstree-search" type="text" class="form-control" placeholder="Search for...">
-          <span class="input-group-btn">
-            <button class="btn btn-default" type="button">
-              <i class="glyphicon glyphicon-search"></i>
-            </button>
+        <pre class="editor-container">
+          <div id="editor"></div>
+        </pre>
+        <div>
+
+          <span>
+            <small class="color-gray"
+              style="font-size: 9px; font-family: 'Courier New', Courier, monospace">Ctrl+Shift+Enter: Run current
+              line,
+              Change Ctrl to Command
+              when use Mac</small>
           </span>
+          <button class="btn btn-default btn-sm" v-if="!codeRunning" v-on:click="codeRunDebugCode(editor.getValue())">运行
+            <small>Ctrl+Enter</small>
+          </button>
+          <span class="btn btn-default btn-sm" v-if="codeRunning">运行中</span>
         </div>
-        <div class="box">
-          <div id="jstree-hierarchy"></div>
-        </div>
+
+        <!-- Colding Area -->
+        <el-tabs type="border-card" v-model="tabActiveName">
+          <el-tab-pane label="Hierarchy" name="hierarchy">
+            <div class="input-group input-group-sm">
+              <div class="input-group-btn">
+                <button class="btn btn-default">
+                  <i class="glyphicon glyphicon-plus"></i>
+                </button>
+              </div>
+              <input id="jstree-search" type="text" class="form-control" placeholder="Search for...">
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button">
+                  <i class="glyphicon glyphicon-search"></i>
+                </button>
+              </span>
+            </div>
+            <div class="box">
+              <div id="jstree-hierarchy"></div>
+            </div>
+          </el-tab-pane>
+          <el-tab-pane label="Console" name="console">
+            <div id="console">
+              <img v-if="codeRunning && !console.content" src="/static/running.svg">
+              <pre v-text="console.content"></pre>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
       </div>
     </div>
 

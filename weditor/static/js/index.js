@@ -42,6 +42,7 @@ new Vue({
         height: 1
       }
     },
+    tabActiveName: "console",
   },
   watch: {
     platform: function (newval) {
@@ -356,6 +357,17 @@ new Vue({
         exec: function (editor) {
           self.codeRunDebugCode(editor.getValue())
         },
+      }, {
+        name: "build-inline",
+        bindKey: {
+          win: "Ctrl-Shift-Enter",
+          mac: "Command-Shift-Enter",
+        },
+        exec: function (editor) {
+          let row = editor.getCursorPosition().row;
+          let line = editor.getSession().getLine(row);
+          self.codeRunDebugCode(line)
+        }
       }]);
 
       // editor.setReadOnly(true);
@@ -555,6 +567,12 @@ new Vue({
     },
     codeRunDebugCode: function (code) {
       this.codeRunning = true;
+      this.tabActiveName = "console";
+      if (!this.deviceId) {
+        return this.doConnect().then(() => {
+          this.codeRunDebugCode(code)
+        })
+      }
       return $.ajax({
         method: 'post',
         url: LOCAL_URL + 'api/v1/devices/' + this.deviceId + '/exec',
