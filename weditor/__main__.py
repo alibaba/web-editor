@@ -10,8 +10,10 @@ import io
 import json
 import os
 import platform
-import socket
+import queue
 import signal
+import socket
+import subprocess
 import sys
 import time
 import traceback
@@ -19,382 +21,31 @@ import uuid
 import webbrowser
 # `pip install futures` for python2
 from concurrent.futures import ThreadPoolExecutor
+from subprocess import PIPE
 
 import six
 import tornado.escape
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
+from logzero import logger
+from pypugjs.ext.tornado import patch_tornado
 from tornado import gen
 from tornado.concurrent import run_on_executor
 from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
 
-from logzero import logger
-from weditor import uidumplib
+from weditor.web.handlers.page import (BaseHandler, BuildWSHandler,
+                                       DeviceConnectHandler,
+                                       DeviceHierarchyHandler, MainHandler,
+                                       VersionHandler, DeviceScreenshotHandler,
+                                       DeviceCodeDebugHandler)
+from weditor.web.utils import current_ip, tostr
 
-try:
-    import Queue as queue
-except:
-    import queue
-
-try:
-    import subprocess32 as subprocess
-    from subprocess32 import PIPE
-except:
-    import subprocess
-    from subprocess import PIPE
-
-__version__ = '0.0.3'
-
-try:
-    enable_pretty_logging()
-except:
-    pass
+patch_tornado()
+enable_pretty_logging()
 
 __dir__ = os.path.dirname(os.path.abspath(__file__))
-cached_devices = {}
-gqueue = queue.Queue()
-
-
-def tostr(s, encoding='utf-8'):
-    if six.PY2:
-        return s.encode(encoding)
-    if isinstance(s, bytes):
-        return s.decode(encoding)
-    return s
-
-
-def get_device(id):
-    return cached_devices.get(id)
-    # return atx.connect(None if serial in ['-', 'default'] else serial)
-    # d = __devices.get(serial)
-    # if d:
-    #     return d
-    # __devices[serial] = atx.connect(None if serial == 'default' else serial)
-    # return __devices.get(serial)
-
-
-def read_file_content(filename, default=''):
-    if not os.path.isfile(filename):
-        return default
-    with open(filename, 'rb') as f:
-        return f.read()
-
-
-def write_file_content(filename, content):
-    with open(filename, 'w') as f:
-        f.write(content.encode('utf-8'))
-
-
-def sha_file(path):
-    sha = hashlib.sha1()
-    with open(path, 'rb') as f:
-        while True:
-            data = f.read(65536)
-            if not data:
-                break
-            sha.update(data)
-    return sha.hexdigest()
-
-
-def virt2real(path):
-    return os.path.join(os.getcwd(), path.lstrip('/'))
-
-
-def real2virt(path):
-    return os.path.relpath(path, os.getcwd()).replace('\\', '/')
-
-
-class BaseHandler(tornado.web.RequestHandler):
-    def set_default_headers(self):
-        self.set_header("Access-Control-Allow-Origin", "*")
-        self.set_header("Access-Control-Allow-Headers", "x-requested-with")
-        self.set_header("Access-Control-Allow-Credentials",
-                        "true")  # allow cookie
-        self.set_header('Access-Control-Allow-Methods',
-                        'POST, GET, PUT, DELETE, OPTIONS')
-
-    def options(self, *args):
-        self.set_status(204)  # no body
-        self.finish()
-
-
-class VersionHandler(BaseHandler):
-    def get(self):
-        ret = {
-            'name': __version__,
-        }
-        self.write(ret)
-
-
-class DeviceScreenshotHandler(BaseHandler):
-    def get(self, serial):
-        logger.info("Serial: %s", serial)
-        try:
-            d = get_device(serial)
-            buffer = io.BytesIO()
-            d.screenshot().convert("RGB").save(buffer, format='JPEG')
-            b64data = base64.b64encode(buffer.getvalue())
-            response = {
-                "type": "jpeg",
-                "encoding": "base64",
-                "data": b64data.decode('utf-8'),
-            }
-            self.write(response)
-        except EnvironmentError as e:
-            traceback.print_exc()
-            self.set_status(430, "Environment Error")
-            self.write({"description": str(e)})
-
-
-class MainHandler(BaseHandler):
-    def get(self):
-        self.render("index.html")
-
-
-class BuildWSHandler(tornado.websocket.WebSocketHandler):
-    executor = ThreadPoolExecutor(max_workers=4)
-
-    # proc = None
-
-    def open(self):
-        print("Websocket opened")
-        self.proc = None
-
-    def check_origin(self, origin):
-        return True
-
-    @run_on_executor
-    def _run(self, device_url, code):
-        """
-        Thanks: https://gist.github.com/mosquito/e638dded87291d313717
-        """
-        try:
-
-            print("DEBUG: run code\n%s" % code)
-            env = os.environ.copy()
-            env['UIAUTOMATOR_DEBUG'] = 'true'
-            if device_url and device_url != 'default':
-                env['ATX_CONNECT_URL'] = tostr(device_url)
-            start_time = time.time()
-
-            self.proc = subprocess.Popen([sys.executable, "-u"],
-                                         env=env,
-                                         stdout=PIPE,
-                                         stderr=subprocess.STDOUT,
-                                         stdin=PIPE)
-            self.proc.stdin.write(code)
-            self.proc.stdin.close()
-
-            for line in iter(self.proc.stdout.readline, b''):
-                print("recv subprocess:", repr(line))
-                if line is None:
-                    break
-                gqueue.put((self, {"buffer": line.decode('utf-8')}))
-            print("Wait exit")
-            exit_code = self.proc.wait()
-            duration = time.time() - start_time
-            ret = {
-                "buffer": "",
-                "result": {
-                    "exitCode": exit_code,
-                    "duration": int(duration) * 1000
-                }
-            }
-            gqueue.put((self, ret))
-            time.sleep(3)  # wait until write done
-        except Exception:
-            traceback.print_exc()
-
-    @tornado.gen.coroutine
-    def on_message(self, message):
-        jdata = json.loads(message)
-        if self.proc is None:
-            code = jdata['content']
-            device_url = jdata.get('deviceUrl')
-            yield self._run(device_url, code.encode('utf-8'))
-            self.close()
-        else:
-            try:
-                self.proc.terminate()
-                # on Windows, kill is alais of terminate()
-                if platform.system() == 'Windows':
-                    return
-                yield tornado.gen.sleep(0.5)
-                if self.proc.poll():
-                    return
-                yield tornado.gen.sleep(1.2)
-                if self.proc.poll():
-                    return
-                print("Force to kill")
-                self.proc.kill()
-            except WindowsError as e:
-                print("Kill error on windows " + str(e))
-
-    def on_close(self):
-        print("Websocket closed")
-
-
-class _AndroidDevice(object):
-    def __init__(self, device_url):
-        import uiautomator2 as u2
-        d = u2.connect(device_url)
-        self._d = d
-
-    def screenshot(self):
-        return self._d.screenshot()
-
-    def dump_hierarchy(self):
-        return uidumplib.get_android_hierarchy(self._d)
-
-    @property
-    def device(self):
-        return self._d
-
-
-class _AppleDevice(object):
-    def __init__(self, device_url):
-        import wda
-        c = wda.Client(device_url)
-        self._client = c
-        self.__scale = c.session().scale
-
-    def screenshot(self):
-        return self._client.screenshot(format='pillow')
-
-    def dump_hierarchy(self):
-        return uidumplib.get_ios_hierarchy(self._client, self.__scale)
-
-    @property
-    def device(self):
-        return self._client.session()
-
-
-class _GameDevice(object):
-    def __init__(self, device_url):
-        import neco
-        d = neco.connect(device_url)
-        self._d = d
-
-    def screenshot(self):
-        return self._d.screenshot()
-
-    def dump_hierarchy(self):
-        return self._d.dump_hierarchy()
-
-    @property
-    def device(self):
-        return self._d
-
-
-class DeviceConnectHandler(BaseHandler):
-    def post(self):
-        platform = self.get_argument("platform").lower()
-        device_url = self.get_argument("deviceUrl")
-        id = str(uuid.uuid4())
-
-        try:
-            if platform == 'android':
-                cached_devices[id] = _AndroidDevice(device_url)
-            elif platform == 'ios':
-                cached_devices[id] = _AppleDevice(device_url)
-            else:
-                cached_devices[id] = _GameDevice(device_url or "localhost")
-        except RuntimeError as e:
-            self.set_status(410)  # 410 Gone
-            self.write({
-                "success": False,
-                "description": str(e),
-            })
-        except Exception as e:
-            logger.warning("device connect error: %s", e)
-            self.set_status(410)  # 410 Gone
-            self.write({
-                "success": False,
-                "description": traceback.format_exc(),
-            })
-        else:
-            self.write({
-                "deviceId": id,
-                'success': True,
-            })
-
-
-class DeviceHierarchyHandler(BaseHandler):
-    def get(self, device_id):
-        d = get_device(device_id)
-        self.write(d.dump_hierarchy())
-
-
-class StringBuffer():
-    def __init__(self):
-        self.encoding = 'utf-8'
-        self.buf = io.BytesIO()
-
-    def write(self, data):
-        if isinstance(data, six.string_types):
-            data = data.encode(self.encoding)
-        self.buf.write(data)
-
-    def getvalue(self):
-        return self.buf.getvalue().decode(self.encoding)
-
-
-class DeviceCodeDebugHandler(BaseHandler):
-    def run(self, device, code):
-        buffer = StringBuffer()
-        sys.stdout = buffer
-        sys.stderr = buffer
-
-        try:
-            is_eval = True
-            compiled_code = None
-            try:
-                compiled_code = compile(code, "<string>", "eval")
-            except SyntaxError:
-                is_eval = False
-                compiled_code = compile(code, "<string>", "exec")
-
-            if is_eval:
-                ret = eval(code, {'d': device})
-                buffer.write((">>> " + repr(ret) + "\n"))
-            else:
-                exec(compiled_code, {'d': device})
-        except:
-            buffer.write(traceback.format_exc())
-        finally:
-            sys.stdout = sys.__stdout__
-            sys.stderr = sys.__stderr__
-
-        return buffer.getvalue()
-
-    def post(self, device_id):
-        d = get_device(device_id)
-        code = self.get_argument('code')
-
-        start = time.time()
-        output = self.run(d.device, code)
-
-        self.write({
-            "success": True,
-            "duration": int((time.time() - start) * 1000),
-            "content": output,
-        })
-
-
-def make_app(settings={}):
-    application = tornado.web.Application([
-        (r"/", MainHandler),
-        (r"/api/v1/version", VersionHandler),
-        (r"/api/v1/connect", DeviceConnectHandler),
-        (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
-        (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
-        (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
-        (r"/ws/v1/build", BuildWSHandler),
-    ], **settings)
-    return application
-
 
 is_closing = False
 
@@ -412,24 +63,17 @@ def try_exit():
         print('exit success')
 
 
-@gen.coroutine
-def consume_queue():
-    # print("Consume task queue")
-    while True:
-        try:
-            (wself, value) = gqueue.get_nowait()
-            wself.write_message(value)
-        except queue.Empty:
-            yield gen.sleep(.2)
-        except Exception as e:
-            print("Error in consume: " + str(e))
-            yield gen.sleep(.5)
-
-
-def current_ip():
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        s.connect(("8.8.8.8", 80))
-        return s.getsockname()[0]
+def make_app(settings={}):
+    application = tornado.web.Application([
+        (r"/", MainHandler),
+        (r"/api/v1/version", VersionHandler),
+        (r"/api/v1/connect", DeviceConnectHandler),
+        (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
+        (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
+        (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
+        (r"/ws/v1/build", BuildWSHandler),
+    ], **settings)
+    return application
 
 
 def run_web(debug=False, port=17310):
@@ -442,17 +86,15 @@ def run_web(debug=False, port=17310):
     signal.signal(signal.SIGINT, signal_handler)
     application.listen(port)
     tornado.ioloop.PeriodicCallback(try_exit, 100).start()
-    tornado.ioloop.IOLoop.instance().add_callback(consume_queue)
+    # tornado.ioloop.IOLoop.instance().add_callback(consume_queue)
     tornado.ioloop.IOLoop.instance().start()
 
 
 def create_shortcut():
-    import os
-    import sys
     if os.name != 'nt':
         sys.exit("Only valid in Windows")
 
-    import pythoncom
+    import pythoncom  # pyint: disable=import-error
     from win32com.shell import shell
     from win32com.shell import shellcon
     # Refs

@@ -20,9 +20,39 @@ NAV
 ----------------------------
 Screen | Properties | Tree
 ----------------------------
-FOOTER
-----------------------------
 ```
+
+The following code is written in pug(rename from jade)
+
+```pug
+body
+  nav
+  #upper
+    #left
+      section#screen
+      section#footer
+      #horizon-gap
+      #console
+    #vertical-gap1
+  #middle
+    .panel
+      .panel-body
+      table
+      input(type="text")
+      pre.editor-container
+  .vertical-gap
+  #right
+    .panel
+      .panel-heading
+    div(class=["input-group", "input-group-sm"])
+      .input-group-btn
+      input#jstree-search
+      span.input-gropu-btn
+    .box
+      #jstree-hierarchy
+
+```
+
 
 See example: https://codepen.io/codeskyblue/pen/mYdjGb
 

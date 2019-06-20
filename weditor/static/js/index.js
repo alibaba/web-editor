@@ -791,7 +791,6 @@ new Vue({
           return false;
         }
         // skip some types
-        console.log(node.type);
         if (['Layout', 'Sprite'].includes(node.type)) {
           return false;
         }

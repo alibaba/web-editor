@@ -1,0 +1,84 @@
+# coding: utf-8
+#
+
+from . import uidumplib
+
+
+class _AndroidDevice(object):
+    def __init__(self, device_url):
+        import uiautomator2 as u2
+        d = u2.connect(device_url)
+        self._d = d
+
+    def screenshot(self):
+        return self._d.screenshot()
+
+    def dump_hierarchy(self):
+        return uidumplib.get_android_hierarchy(self._d)
+
+    @property
+    def device(self):
+        return self._d
+
+
+class _AppleDevice(object):
+    def __init__(self, device_url):
+        import wda
+        c = wda.Client(device_url)
+        self._client = c
+        self.__scale = c.session().scale
+
+    def screenshot(self):
+        return self._client.screenshot(format='pillow')
+
+    def dump_hierarchy(self):
+        return uidumplib.get_ios_hierarchy(self._client, self.__scale)
+
+    @property
+    def device(self):
+        return self._client.session()
+
+
+class _GameDevice(object):
+    def __init__(self, device_url):
+        import neco
+        d = neco.connect(device_url)
+        self._d = d
+
+    def screenshot(self):
+        return self._d.screenshot()
+
+    def dump_hierarchy(self):
+        return self._d.dump_hierarchy()
+
+    @property
+    def device(self):
+        return self._d
+
+
+cached_devices = {}
+
+
+def connect_device(platform, device_url):
+    """
+    Returns:
+        deviceId (string)
+    """
+    device_id = platform + ":" + device_url
+    if platform == 'android':
+        d = _AndroidDevice(device_url)
+    elif platform == 'ios':
+        d = _AppleDevice(device_url)
+    else:
+        d = _GameDevice(device_url or "localhost")
+
+    cached_devices[device_id] = d
+    return device_id
+
+
+def get_device(id):
+    d = cached_devices.get(id)
+    if d is None:
+        platform, uri = id.split(":", maxsplit=1)
+        d = cached_devices[id] = connect_device(platform, uri)
+    return d
