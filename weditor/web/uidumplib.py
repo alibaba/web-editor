@@ -4,7 +4,6 @@ import re
 import xml.dom.minidom
 import uuid
 
-
 sample_android_page_xml = '''<?xml version="1.0" ?>
 <hierarchy rotation="0">
   <node bounds="[0,0][720,1280]" checkable="false" checked="false" class="android.widget.FrameLayout" clickable="false" content-desc="" enabled="true" focusable="false" focused="false" index="0" long-clickable="false" package="com.huawei.android.launcher" password="false" resource-id="" scrollable="false" selected="false" text="">
@@ -33,7 +32,7 @@ def parse_bounds(text):
     if m is None:
         return None
     (lx, ly, rx, ry) = map(int, m.groups())
-    return dict(x=lx, y=ly, width=rx-lx, height=ry-ly)
+    return dict(x=lx, y=ly, width=rx - lx, height=ry - ly)
 
 
 def str2bool(v):
@@ -46,7 +45,6 @@ def str2int(v):
 
 def convstr(v):
     return v
-    # return v.encode('utf-8')
 
 
 __alias = {
@@ -97,7 +95,7 @@ def parse_uiautomator_node(node):
             ks[key] = f(value)
     if 'bounds' in ks:
         lx, ly, rx, ry = map(int, ks.pop('bounds'))
-        ks['rect'] = dict(x=lx, y=ly, width=rx-lx, height=ry-ly)
+        ks['rect'] = dict(x=lx, y=ly, width=rx - lx, height=ry - ly)
     return ks
 
 
@@ -111,17 +109,18 @@ def get_android_hierarchy(d):
     root = dom.documentElement
 
     def travel(node):
-        # print(node)
+        """ return current node info """
         if node.attributes is None:
             return
         json_node = parse_uiautomator_node(node)
-        json_node['id'] = str(uuid.uuid4())
+        json_node['_id'] = str(uuid.uuid4())
         if node.childNodes:
             children = []
             for n in node.childNodes:
-                sub_hierarchy = travel(n)
-                if sub_hierarchy:
-                    children.append(sub_hierarchy)
+                child = travel(n)
+                if child:
+                    # child["_parent"] = json_node["_id"]
+                    children.append(child)
             json_node['children'] = children
         return json_node
 
@@ -132,7 +131,7 @@ def get_ios_hierarchy(d, scale):
     sourcejson = d.source(format='json')
 
     def travel(node):
-        node['id'] = str(uuid.uuid4())
+        node['_id'] = str(uuid.uuid4())
         if node.get('rect'):
             rect = node['rect']
             nrect = {}

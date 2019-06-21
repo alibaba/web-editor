@@ -220,7 +220,12 @@ class DeviceCodeDebugHandler(BaseHandler):
                 compiled_code = compile(code, "<string>", "exec")
 
             if is_eval:
-                ret = eval(code, {'d': device})
+                ret = eval(code, {
+                    'd': device,
+                    'time': time,
+                    'os': os,
+                    'sys': sys
+                })
                 buffer.write((">>> " + repr(ret) + "\n"))
             else:
                 exec(compiled_code, {'d': device})

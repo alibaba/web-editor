@@ -80,5 +80,5 @@ def get_device(id):
     d = cached_devices.get(id)
     if d is None:
         platform, uri = id.split(":", maxsplit=1)
-        d = cached_devices[id] = connect_device(platform, uri)
-    return d
+        connect_device(platform, uri)
+    return cached_devices[id]

@@ -67,3 +67,4 @@ store keys:
 
 - windowHierarchy: JSON.stringified data
 - screenshotBase64
+- code

@@ -169,6 +169,7 @@
                   <td v-text="elem.height"></td>
                 </tr>
               </template>
+              <!-- common -->
               <tr>
                 <td>enabled</td>
                 <td v-text="elem.enabled"></td>
@@ -178,8 +179,12 @@
                 <td v-text="elem.visible"></td>
               </tr>
               <tr>
-                <td>xpath(beta)</td>
+                <td>XPath(beta)</td>
                 <td contenteditable v-text="elemXPathLite"></td>
+              </tr>
+              <tr>
+                <td>XPath(full)</td>
+                <td contenteditable v-text="elemXPathFull"></td>
               </tr>
               <tr>
                 <td>position
