@@ -205,6 +205,8 @@ class StringBuffer():
 
 
 class DeviceCodeDebugHandler(BaseHandler):
+    _global = {}
+
     def run(self, device, code):
         buffer = StringBuffer()
         sys.stdout = buffer
@@ -219,17 +221,13 @@ class DeviceCodeDebugHandler(BaseHandler):
                 is_eval = False
                 compiled_code = compile(code, "<string>", "exec")
 
+            self._global.update(d=device, time=time, os=os)
             if is_eval:
-                ret = eval(code, {
-                    'd': device,
-                    'time': time,
-                    'os': os,
-                    'sys': sys
-                })
+                ret = eval(code, self._global)
                 buffer.write((">>> " + repr(ret) + "\n"))
             else:
-                exec(compiled_code, {'d': device})
-        except:
+                exec(compiled_code, self._global)
+        except Exception:
             buffer.write(traceback.format_exc())
         finally:
             sys.stdout = sys.__stdout__
