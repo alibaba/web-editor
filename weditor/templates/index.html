@@ -46,6 +46,19 @@
             <span v-if="deviceId" class="glyphicon glyphicon-grain color-green"></span>
           </button>
         </form>
+        <ul class="nav navbar-nav navbar-right">
+          <!-- <li><a href="#">Link</a></li> -->
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+              aria-expanded="false">相关文档 <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li><a href="https://github.com/openatx/weditor">openatx/weditor</a></li>
+              <li role="separator" class="divider"></li>
+              <li><a href="https://github.com/openatx/uiautomator2">openatx/uiautomator2</a></li>
+              <li><a href="https://github.com/openatx/facebook-wda">openatx/facebook-wda</a></li>
+            </ul>
+          </li>
+        </ul>
       </div>
     </nav>
     <div id="upper">
@@ -88,9 +101,6 @@
               <button class="btn btn-default btn-sm" v-on:click="doSendKeys('')">Send Keys</button>
               <!-- <button class="btn btn-default btn-sm" v-on:click="doClear()">Clear Text</button> -->
             </div>
-            <label>
-              <input type="checkbox" v-model="codeShortFlag"> 精简代码
-            </label>
           </div>
           <table class="table table-bordered table-weditor table-condensed">
             <thead>
@@ -179,7 +189,7 @@
                 <td v-text="elem.visible"></td>
               </tr>
               <tr>
-                <td>XPathLite</td>
+                <td>XPath</td>
                 <td contenteditable v-text="elemXPathLite"></td>
               </tr>
               <!-- <tr>

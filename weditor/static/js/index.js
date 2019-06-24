@@ -24,7 +24,6 @@ window.vm = new Vue({
     autoCopy: true,
     platform: localStorage.platform || 'Android',
     serial: localStorage.serial || '',
-    codeShortFlag: true, // generate short or long code
     imagePool: null,
     loading: false,
     canvas: {
@@ -71,7 +70,7 @@ window.vm = new Vue({
     elemXPathLite: function () {
       // scan nodes
       this.mapAttrCount = {}
-      this.nodes.forEach((n)=>{
+      this.nodes.forEach((n) => {
         this.incrAttrCount("resourceId", n.resourceId)
         this.incrAttrCount("text", n.text)
         this.incrAttrCount("className", n.className)
@@ -80,27 +79,27 @@ window.vm = new Vue({
 
       let node = this.elem;
       const array = [];
-      while(node && node._parentId){
+      while (node && node._parentId) {
         const parent = this.originNodeMaps[node._parentId]
         if (this.getAttrCount("resourceId", node.resourceId) === 1) {
           array.push(`*[@resource-id="${node.resourceId}"]`)
           break
-        } else if(this.getAttrCount("text", node.text) === 1){
+        } else if (this.getAttrCount("text", node.text) === 1) {
           array.push(`*[@text="${node.text}"]`)
           break
-        } else if (this.getAttrCount("description", node.description)===1 ){
+        } else if (this.getAttrCount("description", node.description) === 1) {
           array.push(`*[@content-desc="${node.description}"]`)
           break
-        } else if(this.getAttrCount("className", node.className) === 1){
+        } else if (this.getAttrCount("className", node.className) === 1) {
           array.push(`${node.className}`)
           break
-        } else if (!parent){
+        } else if (!parent) {
           array.push(`${node.className}`)
         } else {
           let index = 0;
-          parent.children.some((n)=>{
-            if (n.className == node.className){
-              index ++
+          parent.children.some((n) => {
+            if (n.className == node.className) {
+              index++
             }
             return n._id == node._id
           })
@@ -115,11 +114,11 @@ window.vm = new Vue({
       const array = [];
       while (node && node._parentId) {
         let parent = this.originNodeMaps[node._parentId];
-        
+
         let index = 0;
-        parent.children.some((n)=>{
-          if (n.className == node.className){
-            index ++
+        parent.children.some((n) => {
+          if (n.className == node.className) {
+            index++
           }
           return n._id == node._id
         })
@@ -217,15 +216,15 @@ window.vm = new Vue({
           self.loading = false;
         })
     },
-    getAttrCount(collectionKey, key){
+    getAttrCount(collectionKey, key) {
       // eg: getAttrCount("resource-id", "tv_scan_text")
       let mapCount = this.mapAttrCount[collectionKey];
-      if (!mapCount){
+      if (!mapCount) {
         return 0
       }
       return mapCount[key] || 0;
     },
-    incrAttrCount(collectionKey, key){
+    incrAttrCount(collectionKey, key) {
       if (!this.mapAttrCount.hasOwnProperty(collectionKey)) {
         this.mapAttrCount[collectionKey] = {}
       }
@@ -688,22 +687,15 @@ window.vm = new Vue({
       editor.insert(code);
       editor.scrollToRow(editor.getCursorPosition().row); // update cursor position
     },
-    getNodeIndex: function (id, kvs) {
-      var skip = false;
-      return this.nodes.filter(function (node) {
-        if (skip) {
-          return false;
+    findNodes: function (kwargs) {
+      return this.nodes.filter((node) => {
+        for (const [k, v] of Object.entries(kwargs)) {
+          if (node[k] !== v) {
+            return false;
+          }
         }
-        var ok = kvs.every(function (kv) {
-          var k = kv[0],
-            v = kv[1];
-          return node[k] == v;
-        })
-        if (ok && id == node._id) {
-          skip = true;
-        }
-        return ok;
-      }).length - 1;
+        return true
+      })
     },
     generatePythonCode: function (code) {
       return ['# coding: utf-8', 'import atx', 'd = atx.connect()', code].join('\n');
@@ -715,16 +707,7 @@ window.vm = new Vue({
       if (!text) {
         return;
       }
-      var code;
-      // var params = ['"' + text + '"']
-      if (this.nodeSelected) {
-        var params = this.generateNodeSelectorParams(this.nodeSelected)
-        const codeSelector = this.generateNodeSelectorCode(this.nodeSelected)
-        code = `${codeSelector}.set_text("${text}")`
-        // code += "\n" + 'd.press("ENTER")'
-      } else {
-        code = 'd.type("' + text + '")'
-      }
+      const code = `d.send_keys("${text}", clear=True)`
       this.loading = true;
       this.codeInsert(code);
       this.codeRunDebugCode(code)
@@ -760,39 +743,47 @@ window.vm = new Vue({
       this.codeRunDebugCode(code)
         .then(this.delayReload)
     },
-    generateNodeSelectorParams: function (node) {
-      var self = this;
-
-      function combineKeyValue(key, value) {
-        value = '"' + value + '"';
-        if (['text', 'name', 'label', 'description'].indexOf(key) >= 0) {
-          value = value; // python unicode
-        }
-        return key + '=' + value;
-      }
-      var index = 0;
-      var params = [];
-      var kvs = [];
+    generateNodeSelectorKwargs: function (node) {
       // iOS: name, label, className
       // Android: text, description, resourceId, className
-      ['label', 'resourceId', 'name', 'text', 'type', 'tag', 'description', 'className'].some(function (key) {
+      let kwargs = {};
+      ['label', 'resourceId', 'name', 'text', 'type', 'tag', 'description', 'className'].some((key) => {
         if (!node[key]) {
           return false;
         }
-        params.push(combineKeyValue(key, node[key]));
-        kvs.push([key, node[key]]);
-        index = self.getNodeIndex(node._id, kvs);
-        return self.codeShortFlag && index == 0;
+        kwargs[key] = node[key];
+        return this.findNodes(kwargs).length === 1
       });
-      if (index > 0) {
-        params.push('instance=' + index);
+
+      const matchedNodes = this.findNodes(kwargs);
+      const nodeCount = matchedNodes.length
+      if (nodeCount > 1) {
+        kwargs['instance'] = matchedNodes.findIndex((n) => {
+          return n._id == node._id
+        })
       }
-      return params;
+      kwargs["_count"] = nodeCount
+      return kwargs;
+    },
+    _combineKeyValue(key, value) {
+      if (typeof value === "string") {
+        value = `"${value}"`
+      }
+      return key + '=' + value;
     },
     generateNodeSelectorCode: function (node) {
+      let kwargs = this.generateNodeSelectorKwargs(node)
+      if (kwargs._count === 1) {
+        const array = [];
+        for (const [key, value] of Object.entries(kwargs)) {
+          if (key.startsWith("_")) {
+            continue;
+          }
+          array.push(this._combineKeyValue(key, value))
+        }
+        return `d(${array.join(", ")})`
+      }
       return `d.xpath('${this.elemXPathLite}')`
-      // var params = this.generateNodeSelectorParams(node);
-      // return 'd(' + params.join(', ') + ')';
     },
     drawAllNodeFromSource: function (source) {
       let jstreeData = this.sourceToJstree(source);

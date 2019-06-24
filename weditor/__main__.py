@@ -29,7 +29,6 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 from logzero import logger
-from pypugjs.ext.tornado import patch_tornado
 from tornado import gen
 from tornado.concurrent import run_on_executor
 from tornado.escape import json_encode
@@ -42,7 +41,6 @@ from weditor.web.handlers.page import (BaseHandler, BuildWSHandler,
                                        DeviceCodeDebugHandler)
 from weditor.web.utils import current_ip, tostr
 
-patch_tornado()
 enable_pretty_logging()
 
 __dir__ = os.path.dirname(os.path.abspath(__file__))
