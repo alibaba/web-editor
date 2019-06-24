@@ -69,21 +69,65 @@ window.vm = new Vue({
       return this.nodeSelected || {};
     },
     elemXPathLite: function () {
-      var xpath = '//' + (this.elem.className || '*');
-      if (this.elem.text) {
-        xpath += "[@text='" + this.elem.text + "']";
+      // scan nodes
+      this.mapAttrCount = {}
+      this.nodes.forEach((n)=>{
+        this.incrAttrCount("resourceId", n.resourceId)
+        this.incrAttrCount("text", n.text)
+        this.incrAttrCount("className", n.className)
+        this.incrAttrCount("description", n.description)
+      })
+
+      let node = this.elem;
+      const array = [];
+      while(node && node._parentId){
+        const parent = this.originNodeMaps[node._parentId]
+        if (this.getAttrCount("resourceId", node.resourceId) === 1) {
+          array.push(`*[@resource-id="${node.resourceId}"]`)
+          break
+        } else if(this.getAttrCount("text", node.text) === 1){
+          array.push(`*[@text="${node.text}"]`)
+          break
+        } else if (this.getAttrCount("description", node.description)===1 ){
+          array.push(`*[@content-desc="${node.description}"]`)
+          break
+        } else if(this.getAttrCount("className", node.className) === 1){
+          array.push(`${node.className}`)
+          break
+        } else if (!parent){
+          array.push(`${node.className}`)
+        } else {
+          let index = 0;
+          parent.children.some((n)=>{
+            if (n.className == node.className){
+              index ++
+            }
+            return n._id == node._id
+          })
+          array.push(`${node.className}[${index}]`)
+        }
+        node = parent;
       }
-      return xpath;
+      return `//${array.reverse().join("/")}`
     },
     elemXPathFull: function () {
       let node = this.elem;
+      const array = [];
       while (node && node._parentId) {
-        console.log(node.className)
         let parent = this.originNodeMaps[node._parentId];
-        console.log("parent:", parent)
+        
+        let index = 0;
+        parent.children.some((n)=>{
+          if (n.className == node.className){
+            index ++
+          }
+          return n._id == node._id
+        })
+
+        array.push(`${node.className}[${index}]`)
         node = parent;
       }
-      console.log("Done")
+      return `//${array.reverse().join("/")}`
     },
     deviceUrl: function () {
       if (this.platform == 'Android' && this.serial == '') {
@@ -172,6 +216,21 @@ window.vm = new Vue({
         .always(function () {
           self.loading = false;
         })
+    },
+    getAttrCount(collectionKey, key){
+      // eg: getAttrCount("resource-id", "tv_scan_text")
+      let mapCount = this.mapAttrCount[collectionKey];
+      if (!mapCount){
+        return 0
+      }
+      return mapCount[key] || 0;
+    },
+    incrAttrCount(collectionKey, key){
+      if (!this.mapAttrCount.hasOwnProperty(collectionKey)) {
+        this.mapAttrCount[collectionKey] = {}
+      }
+      let count = this.mapAttrCount[collectionKey][key] || 0;
+      this.mapAttrCount[collectionKey][key] = count + 1;
     },
     doConnect: function () {
       var lastDeviceId = this.deviceId;
@@ -477,7 +536,6 @@ window.vm = new Vue({
         img = this.imagePool.next();
 
       img.onload = function () {
-        console.log("image")
         fgcanvas.width = bgcanvas.width = img.width
         fgcanvas.height = bgcanvas.height = img.height
 
@@ -628,6 +686,7 @@ window.vm = new Vue({
       var currentLine = editor.session.getLine(editor.getCursorPosition().row);
       this.codeInsertPrepare(currentLine);
       editor.insert(code);
+      editor.scrollToRow(editor.getCursorPosition().row); // update cursor position
     },
     getNodeIndex: function (id, kvs) {
       var skip = false;
@@ -640,7 +699,7 @@ window.vm = new Vue({
             v = kv[1];
           return node[k] == v;
         })
-        if (ok && id == node.id) {
+        if (ok && id == node._id) {
           skip = true;
         }
         return ok;
@@ -650,7 +709,6 @@ window.vm = new Vue({
       return ['# coding: utf-8', 'import atx', 'd = atx.connect()', code].join('\n');
     },
     doSendKeys: function (text) {
-      // self.codeInsert()
       if (!text) {
         text = window.prompt("Input text?")
       }
@@ -661,12 +719,12 @@ window.vm = new Vue({
       // var params = ['"' + text + '"']
       if (this.nodeSelected) {
         var params = this.generateNodeSelectorParams(this.nodeSelected)
-        code = 'd(' + params.join(', ') + ').set_text("' + text + '")';
+        const codeSelector = this.generateNodeSelectorCode(this.nodeSelected)
+        code = `${codeSelector}.set_text("${text}")`
         // code += "\n" + 'd.press("ENTER")'
       } else {
         code = 'd.type("' + text + '")'
       }
-      // var code = 'd.type(' + params.join(', ') + ')'
       this.loading = true;
       this.codeInsert(code);
       this.codeRunDebugCode(code)
@@ -723,7 +781,7 @@ window.vm = new Vue({
         }
         params.push(combineKeyValue(key, node[key]));
         kvs.push([key, node[key]]);
-        index = self.getNodeIndex(node.id, kvs);
+        index = self.getNodeIndex(node._id, kvs);
         return self.codeShortFlag && index == 0;
       });
       if (index > 0) {
@@ -732,30 +790,9 @@ window.vm = new Vue({
       return params;
     },
     generateNodeSelectorCode: function (node) {
-      var params = this.generateNodeSelectorParams(node);
-      return 'd(' + params.join(', ') + ')';
-    },
-    drawNode: function (node, color, dashed) {
-      if (!node || !node.rect) {
-        return;
-      }
-      var x = node.rect.x,
-        y = node.rect.y,
-        w = node.rect.width,
-        h = node.rect.height;
-      color = color || 'black';
-      var ctx = this.canvas.fg.getContext('2d');
-      var rectangle = new Path2D();
-      rectangle.rect(x, y, w, h);
-      if (dashed) {
-        ctx.lineWidth = 1;
-        ctx.setLineDash([8, 10]);
-      } else {
-        ctx.lineWidth = 5;
-        ctx.setLineDash([]);
-      }
-      ctx.strokeStyle = color;
-      ctx.stroke(rectangle);
+      return `d.xpath('${this.elemXPathLite}')`
+      // var params = this.generateNodeSelectorParams(node);
+      // return 'd(' + params.join(', ') + ')';
     },
     drawAllNodeFromSource: function (source) {
       let jstreeData = this.sourceToJstree(source);
@@ -766,7 +803,7 @@ window.vm = new Vue({
       let nodeMaps = this.originNodeMaps = {}
 
       function sourceToNodes(source) {
-        let node = Object.assign({}, source, { children: undefined });
+        let node = Object.assign({}, source); //, { children: undefined });
         nodeMaps[node._id] = node;
         let nodes = [node];
         if (source.children) {
@@ -804,6 +841,28 @@ window.vm = new Vue({
         self.drawNode(node, 'black', true);
       })
     },
+    drawNode: function (node, color, dashed) {
+      if (!node || !node.rect) {
+        return;
+      }
+      var x = node.rect.x,
+        y = node.rect.y,
+        w = node.rect.width,
+        h = node.rect.height;
+      color = color || 'black';
+      var ctx = this.canvas.fg.getContext('2d');
+      var rectangle = new Path2D();
+      rectangle.rect(x, y, w, h);
+      if (dashed) {
+        ctx.lineWidth = 1;
+        ctx.setLineDash([8, 10]);
+      } else {
+        ctx.lineWidth = 5;
+        ctx.setLineDash([]);
+      }
+      ctx.strokeStyle = color;
+      ctx.stroke(rectangle);
+    },
     findNodesByPosition(pos) {
       function isInside(node, x, y) {
         if (!node.rect) {
@@ -813,7 +872,6 @@ window.vm = new Vue({
           ly = node.rect.y,
           rx = node.rect.width + lx,
           ry = node.rect.height + ly;
-        // console.log(lx, x, rx, "y", ly, y, ry)
         return lx < x && x < rx && ly < y && y < ry;
       }
 
@@ -841,7 +899,6 @@ window.vm = new Vue({
       let hoveredNodes = this.findNodesByPosition(pos);
       let node = hoveredNodes[0];
       this.nodeHovered = node;
-      console.log(hoveredNodes.length);
 
       hoveredNodes.forEach((node) => {
         this.drawNode(node, "green")
@@ -915,6 +972,8 @@ window.vm = new Vue({
         pos.x = Math.floor(pos.px * element.width);
         pos.y = Math.floor(pos.py * element.height);
         self.cursor = pos;
+
+        self.nodeHovered = null;
         markPosition(self.cursor)
 
         stopMousing()
@@ -961,19 +1020,10 @@ window.vm = new Vue({
         var y = e.pageY - screen.bounds.y
         var pos = coord(event);
 
-        // self.drawAllNode()
-        // if (self.nodeSelected) {
-        //   self.drawNode(self.nodeSelected, "red");
-        // }
-
         self.nodeHoveredList = self.findNodesByPosition(pos);
-        self.nodeHoverd = self.nodeHoveredList[0];
-        console.log(self.nodeHoveredList)
+        self.nodeHovered = self.nodeHoveredList[0];
         self.drawRefresh()
-        self.drawNode(self.nodeHoverd, 'red')
-        // TODO: fix it later
 
-        // self.drawHoverNode(pos); // TODO: change to drawRefresh
         if (self.cursor.px) {
           markPosition(self.cursor)
         }
