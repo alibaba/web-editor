@@ -433,6 +433,9 @@ window.vm = new Vue({
       editor.on("change", function (e) {
         localStorage.setItem("code", editor.getValue())
       })
+      editor.on("focus", () => {
+        editor.resize();
+      })
 
       editor.commands.addCommands([{
         name: 'build',
@@ -459,12 +462,7 @@ window.vm = new Vue({
           mac: "Command-Shift-Enter",
         },
         exec: function (editor) {
-          let code = editor.getSelectedText()
-          if (!code) {
-            let row = editor.getCursorPosition().row;
-            code = editor.getSession().getLine(row);
-          }
-          self.codeRunDebugCode(code)
+          self.codeRunSelected()
         }
       }]);
 
@@ -472,7 +470,16 @@ window.vm = new Vue({
       // editor.setHighlightActiveLine(false);
       editor.$blockScrolling = Infinity;
     },
-    resizeScreen: function (img) {
+    codeRunSelected() {
+      const editor = this.editor;
+      let code = editor.getSelectedText()
+      if (!code) {
+        let row = editor.getCursorPosition().row;
+        code = editor.getSession().getLine(row);
+      }
+      return this.codeRunDebugCode(code)
+    },
+    resizeScreen(img) {
       // check if need update
       if (img) {
         if (this.lastScreenSize.canvas.width == img.width &&
@@ -510,10 +517,10 @@ window.vm = new Vue({
         })
       }
     },
-    delayReload: function (msec) {
+    delayReload(msec) {
       setTimeout(this.dumpHierarchyWithScreen, msec || 1000);
     },
-    dumpHierarchyWithScreen: function () {
+    dumpHierarchyWithScreen() {
       var self = this;
       this.loading = true;
       this.canvasStyle.opacity = 0.5;

@@ -59,10 +59,10 @@
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
               aria-expanded="false">相关文档 <span class="caret"></span></a>
             <ul class="dropdown-menu">
-              <li><a href="https://github.com/openatx/weditor">openatx/weditor</a></li>
+              <li><a target="_blank" href="https://github.com/openatx/weditor">openatx/weditor</a></li>
               <li role="separator" class="divider"></li>
-              <li><a href="https://github.com/openatx/uiautomator2">openatx/uiautomator2</a></li>
-              <li><a href="https://github.com/openatx/facebook-wda">openatx/facebook-wda</a></li>
+              <li><a target="_blank" href="https://github.com/openatx/uiautomator2">openatx/uiautomator2</a></li>
+              <li><a target="_blank" href="https://github.com/openatx/facebook-wda">openatx/facebook-wda</a></li>
             </ul>
           </li>
         </ul>
@@ -79,6 +79,8 @@
           <img style="z-index: 10" v-if="loading" src="/static/loading.svg">
         </section>
         <section id="footer">
+          <button class="btn" @click="keyevent('power')">
+            <i class="fa fa-power-off color-red"></i> POWER</button>
           <button class="btn" @click="keyevent('home')">
             <i class="fa fa-home"></i> Home</button>
           <button class="btn" @click="keyevent('back')" :disabled="platform.toLowerCase() != 'android'">
@@ -236,25 +238,22 @@
         <div class="panel panel-default" style="margin-bottom: 0px; border-bottom: 0px">
           <div class="panel-heading">
             <span class="glyphicon glyphicon-music"></span> Coding
+            <span class="pull-right">
+              <el-tooltip :open-delay="500" content="Command+Enter" placement="top">
+                <el-button icon="el-icon-caret-right" type="primary" size="mini" plain
+                  @click="codeRunDebugCode(editor.getValue())" :loading="codeRunning">运行
+                </el-button>
+              </el-tooltip>
+              <el-tooltip :open-delay="500" content="Command+Shift+Enter" placement="top">
+                <el-button type="primary" size="mini" plain @click="codeRunSelected" :loading="codeRunning">选中运行
+                </el-button>
+              </el-tooltip>
+            </span>
           </div>
         </div>
         <pre class="editor-container">
           <div id="editor"></div>
         </pre>
-        <div>
-
-          <span>
-            <small class="color-gray"
-              style="font-size: 9px; font-family: 'Courier New', Courier, monospace">Ctrl+Shift+Enter: Run current
-              line,
-              Change Ctrl to Command
-              when use Mac</small>
-          </span>
-          <button class="btn btn-default btn-sm" v-if="!codeRunning" v-on:click="codeRunDebugCode(editor.getValue())">运行
-            <small>Ctrl+Enter</small>
-          </button>
-          <span class="btn btn-default btn-sm" v-if="codeRunning">运行中</span>
-        </div>
 
         <!-- Colding Area -->
         <el-tabs type="border-card" v-model="tabActiveName">

@@ -61,6 +61,9 @@ See example: https://codepen.io/codeskyblue/pen/mYdjGb
 
 ## References
 - https://www.jstree.com/
+- fontawesome icons: https://fontawesome.com/v4.7.0/icons/
+- element-ui 组件：https://element.eleme.cn
+- bootstrap v3: https://v3.bootcss.com/
 
 # LocalStorage
 store keys:
