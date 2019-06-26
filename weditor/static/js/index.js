@@ -64,7 +64,7 @@ window.vm = new Vue({
       if (enabled) {
         this.doConnect().then(this.loadLiveScreen)
       } else {
-        this.screenDumpUI()
+        this.dumpHierarchyWithScreen()
       }
     },
     useXPathOnly: function () {
@@ -511,34 +511,36 @@ window.vm = new Vue({
       }
     },
     delayReload: function (msec) {
-      setTimeout(this.screenDumpUI, msec || 1000);
+      setTimeout(this.dumpHierarchyWithScreen, msec || 1000);
     },
-    screenDumpUI: function () {
+    dumpHierarchyWithScreen: function () {
       var self = this;
       this.loading = true;
       this.canvasStyle.opacity = 0.5;
 
       if (!this.deviceId) {
-        return this.doConnect().then(this.screenDumpUI)
+        return this.doConnect().then(this.dumpHierarchyWithScreen)
+      } else if (this.liveScreen) {
+        return this.dumpHierarchy()
       } else {
-        return this.screenRefresh()
-          .fail(function (ret) {
-            self.showAjaxError(ret);
-          })
-          .then(function () {
-            return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(self.deviceId || '-') + '/hierarchy')
-          })
-          .fail(function (ret) {
-            self.showAjaxError(ret);
-          })
-          .then(function (source) {
-            localStorage.setItem('windowHierarchy', JSON.stringify(source));
-            self.drawAllNodeFromSource(source);
-          })
+        return this.screenRefresh().then(this.dumpHierarchy)
       }
+    },
+    dumpHierarchy: function () {
+      return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.deviceId || '-') + '/hierarchy')
+        .fail((ret) => {
+          this.showAjaxError(ret);
+        })
+        .then((source) => {
+          localStorage.setItem('windowHierarchy', JSON.stringify(source));
+          this.drawAllNodeFromSource(source);
+        })
     },
     screenRefresh: function () {
       return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.deviceId || '-') + '/screenshot')
+        .fail((err) => {
+          this.showAjaxError(err);
+        })
         .then(function (ret) {
           var blob = b64toBlob(ret.data, 'image/' + ret.type);
           this.drawBlobImageToScreen(blob);
@@ -746,6 +748,7 @@ window.vm = new Vue({
         }.bind(this))
     },
     doTap: function (node) {
+      node = node | this.nodeSelected
       var self = this;
       var code = this.generateNodeSelectorCode(node);
       // FIXME(ssx): put into a standalone function
@@ -1047,6 +1050,11 @@ window.vm = new Vue({
         }
       }
 
+      function contextMenuListener(event) {
+        event.preventDefault()
+        self.dumpHierarchyWithScreen()
+      }
+
       function mouseDownListener(event) {
         var e = event;
         if (e.originalEvent) {
@@ -1054,6 +1062,7 @@ window.vm = new Vue({
         }
         // Skip secondary click
         if (e.which === 3) {
+
           return
         }
         e.preventDefault()
@@ -1107,6 +1116,7 @@ window.vm = new Vue({
       }
 
       /* bind listeners */
+      element.addEventListener("contextmenu", contextMenuListener);
       element.addEventListener('mousedown', mouseDownListener);
       element.addEventListener('mousemove', mouseHoverListener);
     }

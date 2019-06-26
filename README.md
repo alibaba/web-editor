@@ -13,7 +13,7 @@ Only tested in `Google Chrome`, _IE_ seems not working well.
 **Require Python3.5+**
 
 ```
-pip install -U weditor
+pip install --upgrade weditor
 ```
 
 ## Usage
@@ -34,6 +34,19 @@ This command will start a local server with port 17310,
 and then open a browser tab for you to editor you code.
 
 Port 17310 is to memorize the created day -- 2017/03/10
+
+
+## Hotkeys(Both Mac and Win)
+- Right click screen: `Dump Hierarchy`
+
+### Hotkeys(only Mac)
+- Command+Enter: Run the whole code
+- Command+Shift+Enter: Run selected code or current line if not selected
+
+### Hotkeys(only Win)
+- Ctrl+Enter: Run the whole code
+- Ctrl+Shift+Enter: Run selected code or current line if not selected
+
 
 ## For Developers
 See [DEVELOP.md](DEVELOP.md)

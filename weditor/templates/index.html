@@ -45,7 +45,7 @@
             Connect
             <span v-if="deviceId" class="glyphicon glyphicon-grain color-green"></span>
           </button>
-          <button :disabled="loading" class="btn btn-default" v-on:click="screenDumpUI()">
+          <button :disabled="loading" class="btn btn-default" v-on:click="dumpHierarchyWithScreen()">
             <i class="fa fa-refresh"></i> Dump Hierarchy
           </button>
           <template v-if="platform == 'Android'">
@@ -73,7 +73,7 @@
         <div>
         </div>
         <section id="screen">
-          <canvas id="fgCanvas" class="canvas-fg" v-bind:style="canvasStyle"></canvas>
+          <canvas id="fgCanvas" @dblclick="doTap" class="canvas-fg" v-bind:style="canvasStyle"></canvas>
           <canvas id="bgCanvas" class="canvas-bg" v-bind:style="canvasStyle"></canvas>
           <span class="finger finger-0" style="transform: translate3d(200px, 100px, 0px)"></span>
           <img style="z-index: 10" v-if="loading" src="/static/loading.svg">
@@ -95,7 +95,7 @@
           <div class="panel-heading">
             <i class="fa fa-empire" aria-hidden="true"></i> Selected Element
             <span class="pull-right">
-              <button :disabled="loading" class="btn btn-default btn-xs" v-on:click="screenDumpUI()">
+              <button :disabled="loading" class="btn btn-default btn-xs" v-on:click="dumpHierarchyWithScreen()">
                 <i class="fa fa-refresh"></i> Dump Hierarchy
               </button>
             </span>
