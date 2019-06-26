@@ -662,7 +662,8 @@ window.vm = new Vue({
         img.src = url;
       }
 
-      ws.onclose = function (ev) {
+      ws.onclose = (ev) => {
+        this.liveScreen = false;
         console.log("screen websocket closed")
       }
     },
@@ -748,7 +749,7 @@ window.vm = new Vue({
         }.bind(this))
     },
     doTap: function (node) {
-      node = node | this.nodeSelected
+      node = node || this.nodeSelected
       var self = this;
       var code = this.generateNodeSelectorCode(node);
       // FIXME(ssx): put into a standalone function
@@ -848,6 +849,11 @@ window.vm = new Vue({
       if (this.nodeHovered) {
         this.drawNode(this.nodeHovered, "blue")
       }
+    },
+    clearCanvas: function () {
+      const canvas = this.canvas.fg;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     },
     drawAllNode: function () {
       var self = this;

@@ -26,7 +26,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="#">WEditor</a>
+        <a class="navbar-brand" href="#">ATX <strong>WEditor</strong></a>
       </div>
       <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
         <!--         <ul class="nav navbar-nav">
@@ -73,7 +73,7 @@
         <div>
         </div>
         <section id="screen">
-          <canvas id="fgCanvas" @dblclick="doTap" class="canvas-fg" v-bind:style="canvasStyle"></canvas>
+          <canvas id="fgCanvas" @dblclick="doTap(nodeSelected)" class="canvas-fg" v-bind:style="canvasStyle"></canvas>
           <canvas id="bgCanvas" class="canvas-bg" v-bind:style="canvasStyle"></canvas>
           <span class="finger finger-0" style="transform: translate3d(200px, 100px, 0px)"></span>
           <img style="z-index: 10" v-if="loading" src="/static/loading.svg">
@@ -95,15 +95,14 @@
           <div class="panel-heading">
             <i class="fa fa-empire" aria-hidden="true"></i> Selected Element
             <span class="pull-right">
-              <button :disabled="loading" class="btn btn-default btn-xs" v-on:click="dumpHierarchyWithScreen()">
-                <i class="fa fa-refresh"></i> Dump Hierarchy
+              <button :disabled="loading" class="btn btn-default btn-xs" v-on:click="clearCanvas()">
+                <i class="fa fa-square-o"></i> Clear Canvas
               </button>
             </span>
           </div>
           <div class="panel-body">
             <div class="text-center">
-              <button class="btn btn-default btn-sm" :disabled="!nodeSelected"
-                v-on:click="doTap(nodeSelected)">Tap</button>
+              <button class="btn btn-default btn-sm" :disabled="!nodeSelected" v-on:click="doTap()">Tap</button>
               <button class="btn btn-default btn-sm" v-on:click="doSendKeys('')">Send Keys</button>
               <!-- <button class="btn btn-default btn-sm" v-on:click="doClear()">Clear Text</button> -->
             </div>
