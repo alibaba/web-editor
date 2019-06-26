@@ -22,10 +22,14 @@ window.vm = new Vue({
     originNodeMaps: {},
     originNodes: [],
     autoCopy: true,
+    useXPathOnly: false,
     platform: localStorage.platform || 'Android',
     serial: localStorage.serial || '',
     imagePool: null,
     loading: false,
+    screenWebSocket: null,
+    screenWebSocketUrl: null,
+    liveScreen: false,
     canvas: {
       bg: null,
       fg: null,
@@ -51,6 +55,23 @@ window.vm = new Vue({
     },
     serial: function (newval) {
       localStorage.setItem('serial', newval);
+    },
+    liveScreen: function (enabled) {
+      if (this.screenWebSocket) {
+        this.screenWebSocket.close()
+        this.screenWebSocket = null;
+      }
+      if (enabled) {
+        this.doConnect().then(this.loadLiveScreen)
+      } else {
+        this.screenDumpUI()
+      }
+    },
+    useXPathOnly: function () {
+      this.generatedCode = this.generateNodeSelectorCode(this.nodeSelected)
+      if (this.autoCopy) {
+        copyToClipboard(this.generatedCode);
+      }
     }
   },
   computed: {
@@ -245,6 +266,7 @@ window.vm = new Vue({
         .then((ret) => {
           console.log("deviceId", ret.deviceId)
           this.deviceId = ret.deviceId
+          this.screenWebSocketUrl = ret.screenWebSocketUrl
         })
         .fail((ret) => {
           this.showAjaxError(ret);
@@ -581,13 +603,15 @@ window.vm = new Vue({
       var BLANK_IMG =
         'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
       var protocol = location.protocol == "http:" ? "ws://" : "wss://"
-      var ws = new WebSocket('ws://10.240.184.233:9002');
+      var ws = new WebSocket(this.screenWebSocketUrl);
       var canvas = document.getElementById('bgCanvas')
       var ctx = canvas.getContext('2d');
       var lastScreenSize = {
         screen: {},
         canvas: {}
       };
+
+      this.screenWebSocket = ws;
 
       ws.onopen = function (ev) {
         console.log('screen websocket connected')
@@ -772,6 +796,9 @@ window.vm = new Vue({
       return key + '=' + value;
     },
     generateNodeSelectorCode: function (node) {
+      if (this.useXPathOnly) {
+        return `d.xpath('${this.elemXPathLite}')`
+      }
       let kwargs = this.generateNodeSelectorKwargs(node)
       if (kwargs._count === 1) {
         const array = [];

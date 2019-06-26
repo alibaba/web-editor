@@ -155,10 +155,14 @@ class DeviceConnectHandler(BaseHandler):
                 "description": traceback.format_exc(),
             })
         else:
-            self.write({
+            ret = {
                 "deviceId": id,
                 'success': True,
-            })
+            }
+            if platform == "android":
+                ws_addr = get_device(id).device.address.replace("http://", "ws://") # yapf: disable
+                ret['screenWebSocketUrl'] = ws_addr + "/minicap"
+            self.write(ret)
 
 
 class DeviceHierarchyHandler(BaseHandler):

@@ -45,6 +45,13 @@
             Connect
             <span v-if="deviceId" class="glyphicon glyphicon-grain color-green"></span>
           </button>
+          <button :disabled="loading" class="btn btn-default" v-on:click="screenDumpUI()">
+            <i class="fa fa-refresh"></i> Dump Hierarchy
+          </button>
+          <template v-if="platform == 'Android'">
+            <el-switch v-model="liveScreen" active-text="实时" inactive-text="静态">
+            </el-switch>
+          </template>
         </form>
         <ul class="nav navbar-nav navbar-right">
           <!-- <li><a href="#">Link</a></li> -->
@@ -88,9 +95,8 @@
           <div class="panel-heading">
             <i class="fa fa-empire" aria-hidden="true"></i> Selected Element
             <span class="pull-right">
-              <button :disabled="loading" class="button button-primary button-tiny button-rounded"
-                v-on:click="screenDumpUI()">
-                <i class="fa fa-refresh"></i> Reload
+              <button :disabled="loading" class="btn btn-default btn-xs" v-on:click="screenDumpUI()">
+                <i class="fa fa-refresh"></i> Dump Hierarchy
               </button>
             </span>
           </div>
@@ -212,7 +218,7 @@
             <tfoot></tfoot>
           </table>
           <h5>
-            Code
+            代码
           </h5>
           <!-- c9-ide -->
           <input type="text" v-model="generatedCode" class="form-control input-sm">
@@ -220,8 +226,10 @@
             <label>
               <input v-model="autoCopy" type="checkbox"> 自动复制代码
             </label>
+            <label>
+              <input v-model="useXPathOnly" type="checkbox"> 强制使用XPath
+            </label>
           </div>
-
         </div>
       </div>
       <div class="vertical-gap"></div>
