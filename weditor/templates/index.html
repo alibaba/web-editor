@@ -239,9 +239,15 @@
           <div class="panel-heading">
             <span class="glyphicon glyphicon-music"></span> Coding
             <span class="pull-right">
+              <el-button icon="el-icon-document-copy" type="primary" size="mini" plain
+                @click="copyToClipboard(editor.getValue())" :loading="codeRunning">复制
+              </el-button>
+              <el-button icon="el-icon-document-copy" type="primary" size="mini" plain @click="copyAllureCode"
+                :loading="codeRunning">复制为Allure
+              </el-button>
               <el-tooltip :open-delay="500" content="Command+Enter" placement="top">
-                <el-button icon="el-icon-caret-right" type="primary" size="mini" plain
-                  @click="codeRunDebugCode(editor.getValue())" :loading="codeRunning">运行
+                <el-button type="primary" size="mini" plain @click="codeRunDebugCode(editor.getValue())"
+                  :loading="codeRunning">运行
                 </el-button>
               </el-tooltip>
               <el-tooltip :open-delay="500" content="Command+Shift+Enter" placement="top">

@@ -237,6 +237,18 @@ window.vm = new Vue({
           self.loading = false;
         })
     },
+    copyAllureCode() {
+      let value = this.editor.getValue()
+      let codeBody = value.replace(/^(.*)$/gm, "    $1") // indent code
+
+      const code = [
+        '@allure.title("")',
+        '@allure.tag("weditor")',
+        "def test_xxx():",
+        codeBody
+      ].join("\n")
+      copyToClipboard(code)
+    },
     getAttrCount(collectionKey, key) {
       // eg: getAttrCount("resource-id", "tv_scan_text")
       let mapCount = this.mapAttrCount[collectionKey];

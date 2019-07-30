@@ -34,12 +34,13 @@ from tornado.concurrent import run_on_executor
 from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
 
-from weditor.web.handlers.page import (BaseHandler, BuildWSHandler,
-                                       DeviceConnectHandler,
-                                       DeviceHierarchyHandler, MainHandler,
-                                       VersionHandler, DeviceScreenshotHandler,
-                                       DeviceCodeDebugHandler)
-from weditor.web.utils import current_ip, tostr
+from .web.handlers.page import (BaseHandler, BuildWSHandler,
+                                DeviceCodeDebugHandler, DeviceConnectHandler,
+                                DeviceHierarchyHandler,
+                                DeviceScreenshotHandler, MainHandler,
+                                VersionHandler)
+from .web.handlers.proxy import StaticProxyHandler
+from .web.utils import current_ip, tostr
 
 enable_pretty_logging()
 
@@ -69,6 +70,7 @@ def make_app(settings={}):
         (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
         (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
         (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
+        (r"/proxy/(.*)", StaticProxyHandler),
         (r"/ws/v1/build", BuildWSHandler),
     ], **settings)
     return application
@@ -81,6 +83,8 @@ def run_web(debug=False, port=17310):
         'debug': debug,
     })
     print('listening on http://%s:%d' % (current_ip(), port))
+    if debug:
+        logger.info("enable debug mode")
     signal.signal(signal.SIGINT, signal_handler)
     application.listen(port)
     tornado.ioloop.PeriodicCallback(try_exit, 100).start()
