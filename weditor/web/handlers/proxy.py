@@ -1,12 +1,12 @@
 # coding: utf-8
 #
 
-import httpx
-from .page import BaseHandler
-from logzero import logger
-import tornado.httpclient
 import os
 import hashlib
+import tornado.httpclient
+from logzero import logger
+
+from .page import BaseHandler
 
 
 class StaticProxyHandler(BaseHandler):
