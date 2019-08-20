@@ -48,7 +48,7 @@ def convstr(v):
 
 
 __alias = {
-    'class': 'className',
+    'class': '_type',
     'resource-id': 'resourceId',
     'content-desc': 'description',
     'long-clickable': 'longClickable',
@@ -56,10 +56,10 @@ __alias = {
 }
 
 __parsers = {
+    '_type': convstr, # node className
     # Android
     'rect': parse_bounds,
     'text': convstr,
-    'className': convstr,
     'resourceId': convstr,
     'package': convstr,
     'checkable': str2bool,
@@ -132,6 +132,7 @@ def get_ios_hierarchy(d, scale):
 
     def travel(node):
         node['_id'] = str(uuid.uuid4())
+        node['_type'] = node.pop('type', "null")
         if node.get('rect'):
             rect = node['rect']
             nrect = {}

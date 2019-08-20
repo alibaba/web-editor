@@ -1,10 +1,24 @@
 # coding: utf-8
 #
 
+import abc
+from PIL import Image
 from . import uidumplib
 
 
-class _AndroidDevice(object):
+class DeviceMeta(metaclass=abc.ABCMeta):
+    def screenshot(self) -> Image.Image:
+        pass
+
+    def dump_hierarchy(self) -> str:
+        pass
+    
+    @abc.abstractproperty
+    def device(self):
+        pass
+
+
+class _AndroidDevice(DeviceMeta):
     def __init__(self, device_url):
         import uiautomator2 as u2
         d = u2.connect(device_url)
@@ -21,7 +35,7 @@ class _AndroidDevice(object):
         return self._d
 
 
-class _AppleDevice(object):
+class _AppleDevice(DeviceMeta):
     def __init__(self, device_url):
         import wda
         c = wda.Client(device_url)
@@ -39,7 +53,7 @@ class _AppleDevice(object):
         return self._client.session()
 
 
-class _GameDevice(object):
+class _GameDevice(DeviceMeta):
     def __init__(self, device_url):
         import neco
         d = neco.connect(device_url)

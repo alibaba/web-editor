@@ -4,5 +4,5 @@ pillow
 logzero
 
 # third-party dependencies
-uiautomator2>=0.3.3
-facebook-wda>=0.2.2
+uiautomator2>=1.0
+facebook-wda>=0.3

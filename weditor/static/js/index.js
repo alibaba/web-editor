@@ -94,7 +94,7 @@ window.vm = new Vue({
       this.nodes.forEach((n) => {
         this.incrAttrCount("resourceId", n.resourceId)
         this.incrAttrCount("text", n.text)
-        this.incrAttrCount("className", n.className)
+        this.incrAttrCount("_type", n._type)
         this.incrAttrCount("description", n.description)
       })
 
@@ -111,20 +111,20 @@ window.vm = new Vue({
         } else if (this.getAttrCount("description", node.description) === 1) {
           array.push(`*[@content-desc="${node.description}"]`)
           break
-        } else if (this.getAttrCount("className", node.className) === 1) {
-          array.push(`${node.className}`)
+        } else if (this.getAttrCount("_type", node._type) === 1) {
+          array.push(`${node._type}`)
           break
         } else if (!parent) {
-          array.push(`${node.className}`)
+          array.push(`${node._type}`)
         } else {
           let index = 0;
           parent.children.some((n) => {
-            if (n.className == node.className) {
+            if (n._type == node._type) {
               index++
             }
             return n._id == node._id
           })
-          array.push(`${node.className}[${index}]`)
+          array.push(`${node._type}[${index}]`)
         }
         node = parent;
       }
@@ -138,13 +138,13 @@ window.vm = new Vue({
 
         let index = 0;
         parent.children.some((n) => {
-          if (n.className == node.className) {
+          if (n._type == node._type) {
             index++
           }
           return n._id == node._id
         })
 
-        array.push(`${node.className}[${index}]`)
+        array.push(`${node._type}[${index}]`)
         node = parent;
       }
       return `//${array.reverse().join("/")}`
@@ -696,7 +696,7 @@ window.vm = new Vue({
       }
       return $.ajax({
         method: 'post',
-        url: LOCAL_URL + 'api/v1/devices/' + this.deviceId + '/exec',
+        url: LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.deviceId) + '/exec',
         data: {
           code: code
         }
@@ -708,7 +708,6 @@ window.vm = new Vue({
         .always(function () {
           this.codeRunning = false;
         }.bind(this))
-      // return this.codeRunDebug(codeSample);
     },
     codeInsertPrepare: function (line) {
       if (/if $/.test(line)) {

@@ -135,7 +135,7 @@
               </template>
               <tr>
                 <td>className</td>
-                <td contenteditable v-text="elem.className || elem.type"></td>
+                <td contenteditable v-text="elem._type"></td>
               </tr>
               <template v-if="['Android', 'Neco'].includes(platform)">
                 <tr>
@@ -167,23 +167,23 @@
                   <td contenteditable v-text="elem.package"></td>
                 </tr>
               </template>
-              <template v-if="platform == 'iOS'">
+              <template v-if="elem.rect">
                 <tr>
                   <td>label</td>
                   <td contenteditable v-text="elem.label"></td>
                 </tr>
                 <tr>
                   <td>x, y</td>
-                  <td>{{!elem.x}}, {{!elem.y}}</td>
+                  <td>{{!elem.rect.x}}, {{!elem.rect.y}}</td>
                 </tr>
                 </tr>
                 <tr>
                   <td>width</td>
-                  <td v-text="elem.width"></td>
+                  <td v-text="elem.rect.width"></td>
                 </tr>
                 <tr>
                   <td>height</td>
-                  <td v-text="elem.height"></td>
+                  <td v-text="elem.rect.height"></td>
                 </tr>
               </template>
               <!-- common -->
