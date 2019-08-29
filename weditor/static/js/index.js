@@ -237,17 +237,26 @@ window.vm = new Vue({
           self.loading = false;
         })
     },
-    copyAllureCode() {
-      let value = this.editor.getValue()
-      let codeBody = value.replace(/^(.*)$/gm, "    $1") // indent code
+    clearCode() {
+      // this.editor.setValue("")
+      // let value = this.editor.getValue()
+      // let codeBody = value.replace(/^(.*)$/gm, "    $1") // indent code
 
       const code = [
-        '@allure.title("")',
-        '@allure.tag("weditor")',
-        "def test_xxx():",
-        codeBody
-      ].join("\n")
-      copyToClipboard(code)
+        "# coding: utf-8",
+        "#",
+        "import uiautomator2 as u2",
+        "",
+        "d = u2.connect()", 
+        "",
+        "",
+      ].join("\n");
+      this.editor.setValue(code)
+      this.editor.session.selection.clearSelection()
+    },
+    copyToClipboard (text){
+      copyToClipboard(text)
+      this.$message.success('复制成功');
     },
     getAttrCount(collectionKey, key) {
       // eg: getAttrCount("resource-id", "tv_scan_text")
@@ -299,7 +308,7 @@ window.vm = new Vue({
     sourceToJstree: function (source) {
       var n = {}
       n.id = source._id;
-      n.text = source.type || source.className
+      n.text = source._type
       if (source.name) {
         n.text += " - " + source.name;
       }
