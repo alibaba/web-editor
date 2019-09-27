@@ -544,7 +544,7 @@ window.vm = new Vue({
     dumpHierarchyWithScreen() {
       var self = this;
       this.loading = true;
-      this.canvasStyle.opacity = 0.5;
+      this.canvasStyle.opacity = 0.8;
 
       if (!this.deviceId) {
         return this.doConnect().then(this.dumpHierarchyWithScreen)
@@ -628,6 +628,22 @@ window.vm = new Vue({
       img.src = url;
       return dtd;
     },
+    loadLiveHierarchy: function(){
+      if (this.nodeHovered || this.nodeSelected) {
+        setTimeout(this.loadLiveHierarchy, 500)
+        return
+      }
+      return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.deviceId || '-') + '/hierarchy')
+        .fail((ret) => {
+          // setTimeout(this.loadLiveHierarchy, 5000)
+          this.showAjaxError(ret);
+        })
+        .then((source) => {
+          localStorage.setItem('windowHierarchy', JSON.stringify(source));
+          this.drawAllNodeFromSource(source);
+          this.loadLiveHierarchy()
+        })
+    },
     loadLiveScreen: function () {
       var self = this;
       var BLANK_IMG =
@@ -642,6 +658,8 @@ window.vm = new Vue({
       };
 
       this.screenWebSocket = ws;
+
+      this.loadLiveHierarchy() // TODO(ssx): need show flag in screen
 
       ws.onopen = function (ev) {
         console.log('screen websocket connected')
@@ -1008,6 +1026,11 @@ window.vm = new Vue({
         // that.touchMove(0, x / screen.bounds.w, y / screen.bounds.h, pressure);
       }
 
+      function mouseHoverLeaveListener(event) {
+        self.nodeHovered = null;
+        self.drawRefresh()
+      }
+
       function mouseUpListener(event) {
         var e = event
         if (e.originalEvent) {
@@ -1036,6 +1059,7 @@ window.vm = new Vue({
       function stopMousing() {
         element.removeEventListener('mousemove', mouseMoveListener);
         element.addEventListener('mousemove', mouseHoverListener);
+        element.addEventListener('mouseleave', mouseHoverLeaveListener);
         document.removeEventListener('mouseup', mouseUpListener);
         deactiveFinger(0);
       }
@@ -1128,6 +1152,7 @@ window.vm = new Vue({
         }
         // self.touchDown(0, x / screen.bounds.w, y / screen.bounds.h, pressure);
 
+        element.removeEventListener('mouseleave', mouseHoverLeaveListener);
         element.removeEventListener('mousemove', mouseHoverListener);
         element.addEventListener('mousemove', mouseMoveListener);
         document.addEventListener('mouseup', mouseUpListener);
@@ -1152,6 +1177,7 @@ window.vm = new Vue({
       element.addEventListener("contextmenu", contextMenuListener);
       element.addEventListener('mousedown', mouseDownListener);
       element.addEventListener('mousemove', mouseHoverListener);
+      element.addEventListener('mouseleave', mouseHoverLeaveListener);
     }
   }
 })
