@@ -12,23 +12,28 @@ from .page import BaseHandler
 class StaticProxyHandler(BaseHandler):
     http_client = tornado.httpclient.AsyncHTTPClient()
 
-    async def get(self, urlpath: str):
-        print(self.request.remote_ip)
-        logger.debug("path: %s", urlpath)
+    async def get(self, urlpath=None):
+        # print(self.request.remote_ip)
+        if urlpath is None:
+            urlpath = "https://"+self.request.path.lstrip("/")
+        else:
+            urlpath = "https://" + urlpath
+
+        #logger.debug("path: %s", urlpath)
         m = hashlib.md5()
         m.update(urlpath.encode())
 
+        cache_dir = os.path.expanduser("~/.weditor")
         _, ext = os.path.splitext(urlpath)
-        cache_path = os.path.join("cache", m.hexdigest() + ext)
-        if os.path.exists(cache_path):
-            with open(cache_path, 'rb') as f:
-                logger.debug("use cache assets: https://%s", urlpath)
-                self.write(f.read())
-                return
+        cache_path = os.path.join(cache_dir, m.hexdigest() + ext)
+        if not os.path.exists(cache_path):
+            response = await self.http_client.fetch(urlpath)
+            if not os.path.isdir(cache_dir):
+                os.makedirs(cache_dir)
 
-        response = await self.http_client.fetch("https://" + urlpath)
-        if not os.path.isdir("cache"):
-            os.makedirs("cache")
-        self.write(response.body)
-        with open(cache_path, 'wb') as f:
-            f.write(response.body)
+            with open(cache_path, 'wb') as f:
+                f.write(response.body)
+
+        with open(cache_path, 'rb') as f:
+            #logger.debug("use cache assets: %s", urlpath)
+            self.write(f.read())

@@ -23,6 +23,7 @@ import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from subprocess import PIPE
 
+import requests
 import six
 import tornado.escape
 import tornado.ioloop
@@ -70,13 +71,37 @@ def make_app(settings={}):
         (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
         (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
         (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
-        (r"/proxy/(.*)", StaticProxyHandler),
+        # cache static assets
+        (r"/proxy/https/(.*)", StaticProxyHandler),
+        (r"/unpkg.com/.*", StaticProxyHandler),
+        (r"/cdn.jsdelivr.net/.*", StaticProxyHandler),
         (r"/ws/v1/build", BuildWSHandler),
     ], **settings)
     return application
 
 
-def run_web(debug=False, port=17310):
+def check_running(port: int):
+    """
+    sys.exit if already running
+    """
+    try:
+        r = requests.get(f"http://localhost:{port}/api/v1/version", timeout=2.0)
+        if r.status_code == 200:
+            version = r.json().get("version", "dev")
+            sys.exit(f"Another weditor({version}) is already running")
+    except requests.exceptions.ConnectionError:
+        pass
+    except Exception as e:
+        print("Unknown error: %r" % e)
+
+
+def run_web(debug=False, port=17310, open_browser=False):
+    check_running(port)
+
+    if open_browser:
+        # webbrowser.open(url, new=2)
+        webbrowser.open(f'http://localhost:{port}', new=2)
+
     application = make_app({
         'static_path': os.path.join(__dir__, 'static'),
         'template_path': os.path.join(__dir__, 'templates'),
@@ -144,11 +169,7 @@ def main():
         return
 
     open_browser = not args.quiet
-
-    if open_browser:
-        # webbrowser.open(url, new=2)
-        webbrowser.open('http://localhost:' + str(args.port), new=2)
-    run_web(args.debug, args.port)
+    run_web(args.debug, args.port, open_browser)
 
 
 if __name__ == '__main__':

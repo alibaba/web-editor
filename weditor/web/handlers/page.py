@@ -41,7 +41,8 @@ class BaseHandler(tornado.web.RequestHandler):
 class VersionHandler(BaseHandler):
     def get(self):
         ret = {
-            'name': __version__,
+            'name': "weditor",
+            'version': __version__,
         }
         self.write(ret)
 

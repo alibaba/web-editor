@@ -145,3 +145,7 @@ def get_ios_hierarchy(d, scale):
         return node
 
     return travel(sourcejson)
+
+
+def get_webview_hierarchy(d):
+    pass
