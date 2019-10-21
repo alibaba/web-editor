@@ -23,11 +23,16 @@ class StaticProxyHandler(BaseHandler):
         m = hashlib.md5()
         m.update(urlpath.encode())
 
-        cache_dir = os.path.expanduser("~/.weditor")
+        cache_dir = os.path.expanduser("~/.weditor/cache")
         _, ext = os.path.splitext(urlpath)
         cache_path = os.path.join(cache_dir, m.hexdigest() + ext)
         if not os.path.exists(cache_path):
-            response = await self.http_client.fetch(urlpath)
+            request = tornado.httpclient.HTTPRequest(
+                url=urlpath,
+                method="GET",
+                validate_cert=False # fix certificate validate error
+            )
+            response = await self.http_client.fetch(request)
             if not os.path.isdir(cache_dir):
                 os.makedirs(cache_dir)
 
