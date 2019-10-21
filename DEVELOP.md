@@ -2,9 +2,6 @@
 ```bash
 # clone
 git clone https://github.com/openatx/weditor
-cd weditor
-
-# install with -e
 pip install -e weditor
 ```
 
