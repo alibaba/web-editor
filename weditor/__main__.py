@@ -38,8 +38,10 @@ from tornado.log import enable_pretty_logging
 from .web.handlers.page import (BaseHandler, BuildWSHandler,
                                 DeviceCodeDebugHandler, DeviceConnectHandler,
                                 DeviceHierarchyHandler,
-                                DeviceScreenshotHandler, MainHandler,
-                                VersionHandler)
+                                DeviceHierarchyHandlerV2,
+                                DeviceScreenshotHandler,
+                                DeviceWidgetListHandler, MainHandler,
+                                VersionHandler, WidgetPreviewHandler, RpcClient)
 from .web.handlers.proxy import StaticProxyHandler
 from .web.utils import current_ip, tostr
 
@@ -56,11 +58,28 @@ def signal_handler(signum, frame):
     is_closing = True
 
 
+def stop_server():
+    tornado.ioloop.IOLoop.instance().stop()
+    RpcClient.stop()
+
+
 def try_exit():
     global is_closing
     if is_closing:  # clean up here
-        tornado.ioloop.IOLoop.instance().stop()
-        print('exit success')
+        stop_server()
+        logger.info('exit success')
+
+
+class QuitHandler(BaseHandler):
+    def get(self):
+        stop_server()
+        self.write({"success": True, "description": "Successfully quited"})
+
+
+class CropHandler(BaseHandler):
+    def get(self):
+        """ used for crop image """
+        pass
 
 
 def make_app(settings={}):
@@ -68,14 +87,23 @@ def make_app(settings={}):
         (r"/", MainHandler),
         (r"/api/v1/version", VersionHandler),
         (r"/api/v1/connect", DeviceConnectHandler),
+        (r"/api/v1/crop", CropHandler),
         (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
         (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
         (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
+        (r"/api/v1/devices/([^/]+)/widget", DeviceWidgetListHandler),
+        (r"/api/v1/widgets", DeviceWidgetListHandler), # add widget
+        (r"/api/v1/widgets/([^/]+)", DeviceWidgetListHandler),
+        # v2
+        (r"/api/v2/devices/([^/]+)/hierarchy", DeviceHierarchyHandlerV2),
+        # widgets
+        (r"/widgets/([^/]+)", WidgetPreviewHandler),
+        (r"/widgets/(.+/.+)", tornado.web.StaticFileHandler, {"path": "./widgets"}),
         # cache static assets
-        (r"/proxy/https/(.*)", StaticProxyHandler),
-        (r"/unpkg.com/.*", StaticProxyHandler),
-        (r"/cdn.jsdelivr.net/.*", StaticProxyHandler),
+        (r"/(unpkg.com/.*)", StaticProxyHandler),
+        (r"/(cdn.jsdelivr.net/.*)", StaticProxyHandler),
         (r"/ws/v1/build", BuildWSHandler),
+        (r"/quit", QuitHandler),
     ], **settings)
     return application
 

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{{id}} Widget</title>
+</head>
+
+<style>
+    .box {
+        display: flex
+    }
+
+    pre {
+        margin-top: 0px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        border: 1px solid gray;
+        padding: 2px;
+    }
+
+    .image-container {
+        margin-right: 5px;
+    }
+
+    .image-container>img {
+        padding: 2px;
+        border: 1px solid red;
+    }
+</style>
+
+<body>
+    <div id="app">
+        <div>
+            <strong>ID:</strong> <span v-text="id"></span>
+            <a :href="location.pathname + '/hierarchy.xml'">hierarchy</a>
+        </div>
+        <hr>
+        <div class="box">
+            <div class="image-container">
+                <img height="100px" :src="templateUrl">
+            </div>
+            <div class="image-container">
+                <img height="500px" :src="screenshotUrl">
+            </div>
+            <div>
+                <pre style="max-width: 800px" v-text="metaJson"></pre>
+            </div>
+        </div>
+    </div>
+    <script src="/cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script src="{{static_url('libs/vue-2.5.16/vue.js')}}"></script>
+    <script>
+        const id = "{{id}}"
+
+        new Vue({
+            el: "#app",
+            data: {
+                id: id,
+                metaJson: ""
+            },
+            computed: {
+                templateUrl() {
+                    return location.pathname + "/template.jpg"
+                },
+                screenshotUrl() {
+                    return location.pathname + "/screenshot.jpg"
+                },
+                location(){
+                    return window.location
+                }
+            },
+            mounted() {
+                $.getJSON(location.pathname + "/meta.json")
+                    .then(ret => {
+                        console.log(ret)
+                        this.metaJson = JSON.stringify(ret, "", 4)
+                    })
+            }
+        })
+    </script>
+</body>
+
+</html>

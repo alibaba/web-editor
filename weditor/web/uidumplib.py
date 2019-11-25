@@ -35,6 +35,10 @@ def parse_bounds(text):
     return dict(x=lx, y=ly, width=rx - lx, height=ry - ly)
 
 
+def safe_xmlstr(s):
+    return s.replace("$", "-")
+
+
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
@@ -56,7 +60,7 @@ __alias = {
 }
 
 __parsers = {
-    '_type': convstr, # node className
+    '_type': safe_xmlstr, # node className
     # Android
     'rect': parse_bounds,
     'text': convstr,
@@ -84,7 +88,7 @@ __parsers = {
 }
 
 
-def parse_uiautomator_node(node):
+def _parse_uiautomator_node(node):
     ks = {}
     for key, value in node.attributes.items():
         key = __alias.get(key, key)
@@ -100,11 +104,15 @@ def parse_uiautomator_node(node):
 
 
 def get_android_hierarchy(d):
+    page_xml = d.dump_hierarchy(compressed=False, pretty=False).encode('utf-8')
+    return android_hierarchy_to_json(page_xml)
+
+
+def android_hierarchy_to_json(page_xml: bytes):
     """
     Returns:
         JSON object
     """
-    page_xml = d.dump_hierarchy(compressed=False, pretty=False).encode('utf-8')
     dom = xml.dom.minidom.parseString(page_xml)
     root = dom.documentElement
 
@@ -112,7 +120,7 @@ def get_android_hierarchy(d):
         """ return current node info """
         if node.attributes is None:
             return
-        json_node = parse_uiautomator_node(node)
+        json_node = _parse_uiautomator_node(node)
         json_node['_id'] = str(uuid.uuid4())
         if node.childNodes:
             children = []

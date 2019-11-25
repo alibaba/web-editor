@@ -1,44 +1,59 @@
 # coding: utf-8
 #
 
-import os
 import hashlib
+import os
+import re
+
 import tornado.httpclient
+import tornado.web
 from logzero import logger
 
 from .page import BaseHandler
 
 
-class StaticProxyHandler(BaseHandler):
+class StaticProxyHandler(tornado.web.StaticFileHandler):
     http_client = tornado.httpclient.AsyncHTTPClient()
 
-    async def get(self, urlpath=None):
-        # print(self.request.remote_ip)
-        if urlpath is None:
-            urlpath = "https://"+self.request.path.lstrip("/")
-        else:
-            urlpath = "https://" + urlpath
+    def initialize(self, path: str ="/", default_filename: str = None) -> None:
+        self.root = path
+        self.default_filename = default_filename
 
-        #logger.debug("path: %s", urlpath)
-        m = hashlib.md5()
-        m.update(urlpath.encode())
+    async def download_file(self, path: str) -> str:
+        """
+        Returns:
+            download file path
+        
+        Raises:
+            tornado.web.HTTPError
+        """
+        cache_path = os.path.join(self.settings.get("static_path"), "cdn_libraries", path)
+        if os.path.exists(cache_path):
+            return cache_path
+        
+        # cache to local directory
+        local_cache_dir = os.path.expanduser("~/.weditor/cache")
+        cache_path = os.path.join(local_cache_dir, path)
+        if os.path.exists(cache_path):
+            return cache_path
+        
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
 
-        cache_dir = os.path.expanduser("~/.weditor/cache")
-        _, ext = os.path.splitext(urlpath)
-        cache_path = os.path.join(cache_dir, m.hexdigest() + ext)
-        if not os.path.exists(cache_path):
-            request = tornado.httpclient.HTTPRequest(
-                url=urlpath,
-                method="GET",
-                validate_cert=False # fix certificate validate error
-            )
-            response = await self.http_client.fetch(request)
-            if not os.path.isdir(cache_dir):
-                os.makedirs(cache_dir)
+        request = tornado.httpclient.HTTPRequest(
+            url="https://"+path,
+            method="GET",
+            validate_cert=False  # fix certificate validate error
+        )
 
-            with open(cache_path, 'wb') as f:
-                f.write(response.body)
+        response = await self.http_client.fetch(request, raise_error=False)
+        if response.code != 200:
+            raise tornado.web.HTTPError(404)
+        
+        with open(cache_path, 'wb') as f:
+            f.write(response.body)
+        
+        return cache_path
 
-        with open(cache_path, 'rb') as f:
-            #logger.debug("use cache assets: %s", urlpath)
-            self.write(f.read())
+    async def get(self, path: str, include_body: bool = True) -> None:
+        abspath = await self.download_file(path)
+        await super().get(abspath, include_body)

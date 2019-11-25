@@ -29,6 +29,17 @@ class _AndroidDevice(DeviceMeta):
 
     def dump_hierarchy(self):
         return uidumplib.get_android_hierarchy(self._d)
+    
+    def dump_hierarchy2(self):
+        current = self._d.app_current()
+        page_xml = self._d.dump_hierarchy(pretty=True)
+        page_json = uidumplib.android_hierarchy_to_json(page_xml.encode('utf-8'))
+        return {
+            "xmlHierarchy": page_xml, 
+            "jsonHierarchy": page_json,
+            "activity": current['activity'],
+            "windowSize": self._d.window_size(),
+        }
 
     @property
     def device(self):
@@ -47,6 +58,12 @@ class _AppleDevice(DeviceMeta):
 
     def dump_hierarchy(self):
         return uidumplib.get_ios_hierarchy(self._client, self.__scale)
+    
+    def dump_hierarchy2(self):
+        return {
+            "jsonHierarchy": uidumplib.get_ios_hierarchy(self._client, self.__scale),
+            "windowSize": self._client.session().window_size(),
+        }
 
     @property
     def device(self):

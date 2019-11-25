@@ -4,15 +4,15 @@
 <head>
   <meta charset="utf-8" />
   <title>WEditor</title>
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/bootstrap/3.3.7/css/bootstrap.min.css">
-  <link rel="stylesheet" href="//unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <link rel="stylesheet" href="/cdn.jsdelivr.net/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/unpkg.com/element-ui/lib/theme-chalk/index.css">
 
   <link rel="stylesheet" type="text/css" href="/static/libs/css/buttons.css">
   <link rel="stylesheet" type="text/css" href="/static/libs/fontawesome/css/font-awesome.min.css">
-  <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.select/1.12.2/css/bootstrap-select.min.css">
+  <link rel="stylesheet" type="text/css" href="/cdn.jsdelivr.net/bootstrap.select/1.12.2/css/bootstrap-select.min.css">
   <link rel="stylesheet" type="text/css" href="{{static_url('style.css')}}">
   <!-- jstree -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jstree@3.3.8/dist/themes/default/style.min.css">
+  <link rel="stylesheet" href="/cdn.jsdelivr.net/npm/jstree@3.3.8/dist/themes/default/style.min.css">
 </head>
 
 <body>
@@ -37,8 +37,13 @@
             <select v-model="platform" class="selectpicker" value="Android" title="Platform" data-width="fit">
               <option data-icon="glyphicon-piggy-bank" value="Android">Android</option>
               <option data-icon="glyphicon-apple" value="iOS">iOS</option>
-              <option data-icon="glyphicon-apple" value="Neco">Neco(beta)</option>
+              <!-- <option data-icon="glyphicon-apple" value="Neco">Neco(beta)</option> -->
             </select>
+            <!-- <el-select v-model="serial" allow-create filterable placeholder="选择或输入">
+              <el-option
+                v-for="item in deviceList" :key="item.value" :label="item.label + ':' + item.value" :value="item.value">
+              </el-option>
+            </el-select> -->
             <input type="text" v-model="serial" class="form-control" v-bind:placeholder="deviceUrl">
           </div>
           <button type="submit" class="btn btn-default" v-on:click="doConnect">
@@ -104,6 +109,7 @@
           </div>
           <div class="panel-body">
             <div class="text-center">
+              <button class="btn btn-default btn-sm" :disabled="!nodeSelected" @click="doTapWidget()">Tap Widget(Beta)</button>
               <button class="btn btn-default btn-sm" :disabled="!nodeSelected" v-on:click="doTap()">Tap</button>
               <button class="btn btn-default btn-sm" v-on:click="doSendKeys('')">Send Keys</button>
               <!-- <button class="btn btn-default btn-sm" v-on:click="doClear()">Clear Text</button> -->
@@ -117,6 +123,10 @@
               </tr>
             </thead>
             <tbody>
+              <tr v-if="platform == 'Android'">
+                <td>activity</td>
+                <td contenteditable v-text="activity"></td>
+              </tr>
               <template v-if="['iOS', 'Neco'].includes(platform)">
                 <tr>
                   <td>name</td>
@@ -324,7 +334,7 @@
 <script src="/cdn.jsdelivr.net/npm/jstree@3.3.8/dist/jstree.min.js"></script>
 
 <script src="{{static_url('libs/vue-2.5.16/vue.js')}}"></script>
-<script src="//unpkg.com/element-ui/lib/index.js"></script>
+<script src="/unpkg.com/element-ui/lib/index.js"></script>
 
 <script src="{{static_url('js/common.js')}}"></script>
 <script src="{{static_url('js/index.js')}}"></script>

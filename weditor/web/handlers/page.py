@@ -1,27 +1,33 @@
 # coding: utf-8
 #
 
+import base64
+import io
 import json
 import os
 import platform
 import queue
 import subprocess
 import sys
-import io
-import base64
 import time
 import traceback
+import xmlrpc.client
 # `pip install futures` for python2
 from concurrent.futures import ThreadPoolExecutor
 from subprocess import PIPE
+
 import six
 import tornado
-from tornado.concurrent import run_on_executor
 from logzero import logger
+from PIL import Image
+from tornado.concurrent import run_on_executor
+from tornado.escape import json_decode
 
 from ..device import connect_device, get_device
 from ..utils import tostr
 from ..version import __version__
+
+pathjoin = os.path.join
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -172,6 +178,117 @@ class DeviceHierarchyHandler(BaseHandler):
         self.write(d.dump_hierarchy())
 
 
+class DeviceHierarchyHandlerV2(BaseHandler):
+    def get(self, device_id):
+        d = get_device(device_id)
+        self.write(d.dump_hierarchy2())
+
+
+class WidgetPreviewHandler(BaseHandler):
+    def get(self, id):
+        self.render("widget_preview.html", id=id)
+
+
+class DeviceWidgetListHandler(BaseHandler):
+    __store_dir = "./widgets"
+
+    def generate_id(self):
+        names = [
+            name for name in os.listdir(self.__store_dir)
+            if os.path.isdir(os.path.join(self.__store_dir, name))
+        ]
+        return "%05d" % (len(names) + 1)
+
+    def get(self, widget_id: str):
+        data_dir = os.path.join(self.__store_dir, widget_id)
+        with open(pathjoin(data_dir, "hierarchy.xml"), "r",
+                  encoding="utf-8") as f:
+            hierarchy = f.read()
+
+        with open(os.path.join(data_dir, "meta.json"), "rb") as f:
+            meta_info = json.load(f)
+            meta_info['hierarchy'] = hierarchy
+            self.write(meta_info)
+
+    def json_parse(self, source):
+        with open(source, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def put(self, widget_id: str):
+        """ update widget data """
+        data = json_decode(self.request.body)
+        target_dir = os.path.join(self.__store_dir, widget_id)
+        with open(pathjoin(target_dir, "hierarchy.xml"), "w",
+                  encoding="utf-8") as f:
+            f.write(data['hierarchy'])
+
+        # update meta
+        meta_path = pathjoin(target_dir, "meta.json")
+        meta = self.json_parse(meta_path)
+        meta["xpath"] = data['xpath']
+        with open(meta_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(meta, indent=4, ensure_ascii=False))
+
+        self.write({
+            "success": True,
+            "description": f"widget {widget_id} updated",
+        })
+
+    def post(self):
+        data = json_decode(self.request.body)
+        widget_id = self.generate_id()
+        target_dir = os.path.join(self.__store_dir, widget_id)
+        os.makedirs(target_dir, exist_ok=True)
+
+        image_fd = io.BytesIO(base64.b64decode(data['screenshot']))
+        im = Image.open(image_fd)
+        im.save(pathjoin(target_dir, "screenshot.jpg"))
+
+        lx, ly, rx, ry = bounds = data['bounds']
+        im.crop(bounds).save(pathjoin(target_dir, "template.jpg"))
+
+        cx, cy = (lx + rx) // 2, (ly + ry) // 2
+        # TODO(ssx): missing offset
+        # pprint(data)
+        widget_data = {
+            "resource_id": data["resourceId"],
+            "text": data['text'],
+            "description": data["description"],
+            "target_size": [rx - lx, ry - ly],
+            "package": data["package"],
+            "activity": data["activity"],
+            "class_name": data['className'],
+            "rect": dict(x=lx, y=ly, width=rx-lx, height=ry-ly),
+            "window_size": data['windowSize'],
+            "xpath": data['xpath'],
+            "target_image": {
+                "size": [rx - lx, ry - ly],
+                "url": f"http://localhost:17310/widgets/{widget_id}/template.jpg",
+            },
+            "device_image": {
+                "size": im.size,
+                "url": f"http://localhost:17310/widgets/{widget_id}/screenshot.jpg",
+            },
+            # "center_point": [cx, cy],
+            # "hierarchy": data['hierarchy'],
+        } # yapf: disable
+
+        with open(pathjoin(target_dir, "meta.json"), "w",
+                  encoding="utf-8") as f:
+            json.dump(widget_data, f, ensure_ascii=False, indent=4)
+
+        with open(pathjoin(target_dir, "hierarchy.xml"), "w",
+                  encoding="utf-8") as f:
+            f.write(data['hierarchy'])
+
+        self.write({
+            "success": True,
+            "id": widget_id,
+            "note": data['text'] or data['description'],  # 备注
+            "data": widget_data,
+        })
+
+
 class DeviceScreenshotHandler(BaseHandler):
     def get(self, serial):
         logger.info("Serial: %s", serial)
@@ -209,8 +326,87 @@ class StringBuffer():
         return self.buf.getvalue().decode(self.encoding)
 
 
+class RpcClient():
+    rpc_running = False
+    rpc_port = 17320
+    rpc_remote_address = f"http://localhost:{rpc_port}"
+
+    @classmethod
+    def get_instance(cls):
+        if not cls.is_running():
+            cls.launch_server()
+        return cls.get_xmlrpc_client()
+    
+    @classmethod
+    def get_xmlrpc_client(cls):
+        return xmlrpc.client.ServerProxy(cls.rpc_remote_address, allow_none=True)
+
+    @classmethod
+    def is_running(cls):
+        try:
+            s = cls.get_xmlrpc_client()
+            if s.ping() == "pong":
+                return True
+        except Exception as e:
+            return False
+    
+    @classmethod
+    def launch_server(cls, timeout=10.0):
+        logger.info(f"launch rpc server, listen on port {cls.rpc_port}")
+        curdir = os.path.dirname(os.path.abspath(__file__))
+        rpcserver_path = os.path.join(curdir, "../../rpcserver.py")
+        p = subprocess.Popen(
+            [sys.executable, rpcserver_path, "-p",
+             str(cls.rpc_port)],
+            stdout=sys.stdout,
+            stderr=sys.stderr)
+
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if p.poll() is not None:
+                raise RuntimeError("rpcserver launch error")
+
+            s = xmlrpc.client.ServerProxy(cls.rpc_remote_address)
+            try:
+                if s.ping() == "pong":
+                    return p
+            except Exception as e:
+                logger.debug("check: %s", e)
+            time.sleep(.5)
+
+        p.terminate()
+        raise RuntimeError("rpcserver launch timeout")
+
+    @classmethod
+    def stop(cls):
+        if not cls.is_running():
+            return
+        s = cls.get_xmlrpc_client()
+        try:
+            s.quit()
+        except ConnectionRefusedError:
+            logger.info("rpcserver quit success")
+        except Exception as e:
+            logger.warning("rpcserver quit error: %s", e)
+        
+
 class DeviceCodeDebugHandler(BaseHandler):
-    _global = {}
+    executor = ThreadPoolExecutor(max_workers=4)
+
+    def open(self):
+        print("Websocket opened")
+        self.proc = None
+
+    def check_origin(self, origin):
+        return True
+
+    @run_on_executor
+    def _run(self, device_id, code):
+        client = RpcClient.get_instance()
+        # client.connect(device_id)
+        logger.debug("RUN code: %s", code)
+        output = client.run_python_code(device_id, code)
+        return output
 
     def run(self, device, code):
         buffer = StringBuffer()
@@ -240,13 +436,13 @@ class DeviceCodeDebugHandler(BaseHandler):
 
         return buffer.getvalue()
 
-    def post(self, device_id):
+    async def post(self, device_id):
+        start = time.time()
         d = get_device(device_id)
+        logger.debug("deviceId: %s", device_id)
         code = self.get_argument('code')
 
-        start = time.time()
-        output = self.run(d.device, code)
-
+        output = await self._run(device_id, code)
         self.write({
             "success": True,
             "duration": int((time.time() - start) * 1000),

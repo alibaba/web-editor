@@ -95,3 +95,6 @@ ENV/
 bower_components
 CHANGELOG
 debug.xml
+
+.DS_Store
+widgets/
