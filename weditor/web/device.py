@@ -38,6 +38,7 @@ class _AndroidDevice(DeviceMeta):
             "xmlHierarchy": page_xml, 
             "jsonHierarchy": page_json,
             "activity": current['activity'],
+            "packageName": current['package'],
             "windowSize": self._d.window_size(),
         }
 

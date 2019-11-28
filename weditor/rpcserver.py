@@ -16,6 +16,7 @@ import os
 import signal
 import sys
 import time
+import traceback
 from xmlrpc.server import SimpleXMLRPCRequestHandler, SimpleXMLRPCServer
 
 import uiautomator2
@@ -98,8 +99,6 @@ def get_device(device_id: str):
 
 
 def run_python_code(device_id: str, code: str):
-    _globals.update({"d": get_device(device_id)})
-
     is_eval = True
     compiled_code = None
     try:
@@ -109,11 +108,15 @@ def run_python_code(device_id: str, code: str):
         compiled_code = compile(code, "<string>", "exec")
 
     with FakeOutput() as c:
-        if is_eval:
-            ret = eval(code, _globals)
-            print(">>> " + repr(ret))
-        else:
-            exec(compiled_code, _globals)
+        try:
+            _globals.update({"d": get_device(device_id)})
+            if is_eval:
+                ret = eval(code, _globals)
+                print(">>> " + repr(ret))
+            else:
+                exec(compiled_code, _globals)
+        except:
+            traceback.print_exc()
 
     return c.output
 

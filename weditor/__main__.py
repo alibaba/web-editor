@@ -35,15 +35,14 @@ from tornado.concurrent import run_on_executor
 from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
 
-from .web.handlers.page import (BaseHandler, BuildWSHandler,
-                                DeviceCodeDebugHandler, DeviceConnectHandler,
-                                DeviceHierarchyHandler,
-                                DeviceHierarchyHandlerV2,
-                                DeviceScreenshotHandler,
-                                DeviceWidgetListHandler, MainHandler,
-                                VersionHandler, WidgetPreviewHandler, RpcClient)
+from .web.handlers.page import (
+    BaseHandler, BuildWSHandler, DeviceCodeDebugHandler, DeviceConnectHandler,
+    DeviceHierarchyHandler, DeviceHierarchyHandlerV2, DeviceScreenshotHandler,
+    DeviceWidgetListHandler, MainHandler, VersionHandler, WidgetPreviewHandler,
+    RpcClient)
 from .web.handlers.proxy import StaticProxyHandler
 from .web.utils import current_ip, tostr
+from .web.version import __version__
 
 enable_pretty_logging()
 
@@ -83,28 +82,32 @@ class CropHandler(BaseHandler):
 
 
 def make_app(settings={}):
-    application = tornado.web.Application([
-        (r"/", MainHandler),
-        (r"/api/v1/version", VersionHandler),
-        (r"/api/v1/connect", DeviceConnectHandler),
-        (r"/api/v1/crop", CropHandler),
-        (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
-        (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
-        (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
-        (r"/api/v1/devices/([^/]+)/widget", DeviceWidgetListHandler),
-        (r"/api/v1/widgets", DeviceWidgetListHandler), # add widget
-        (r"/api/v1/widgets/([^/]+)", DeviceWidgetListHandler),
-        # v2
-        (r"/api/v2/devices/([^/]+)/hierarchy", DeviceHierarchyHandlerV2),
-        # widgets
-        (r"/widgets/([^/]+)", WidgetPreviewHandler),
-        (r"/widgets/(.+/.+)", tornado.web.StaticFileHandler, {"path": "./widgets"}),
-        # cache static assets
-        (r"/(unpkg.com/.*)", StaticProxyHandler),
-        (r"/(cdn.jsdelivr.net/.*)", StaticProxyHandler),
-        (r"/ws/v1/build", BuildWSHandler),
-        (r"/quit", QuitHandler),
-    ], **settings)
+    application = tornado.web.Application(
+        [
+            (r"/", MainHandler),
+            (r"/api/v1/version", VersionHandler),
+            (r"/api/v1/connect", DeviceConnectHandler),
+            (r"/api/v1/crop", CropHandler),
+            (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
+            (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
+            (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
+            (r"/api/v1/devices/([^/]+)/widget", DeviceWidgetListHandler),
+            (r"/api/v1/widgets", DeviceWidgetListHandler),  # add widget
+            (r"/api/v1/widgets/([^/]+)", DeviceWidgetListHandler),
+            # v2
+            (r"/api/v2/devices/([^/]+)/hierarchy", DeviceHierarchyHandlerV2),
+            # widgets
+            (r"/widgets/([^/]+)", WidgetPreviewHandler),
+            (r"/widgets/(.+/.+)", tornado.web.StaticFileHandler, {
+                "path": "./widgets"
+            }),
+            # cache static assets
+            (r"/(unpkg.com/.*)", StaticProxyHandler),
+            (r"/(cdn.jsdelivr.net/.*)", StaticProxyHandler),
+            (r"/ws/v1/build", BuildWSHandler),
+            (r"/quit", QuitHandler),
+        ],
+        **settings)
     return application
 
 
@@ -113,7 +116,8 @@ def check_running(port: int):
     sys.exit if already running
     """
     try:
-        r = requests.get(f"http://localhost:{port}/api/v1/version", timeout=2.0)
+        r = requests.get(f"http://localhost:{port}/api/v1/version",
+                         timeout=2.0)
         if r.status_code == 200:
             version = r.json().get("version", "dev")
             sys.exit(f"Another weditor({version}) is already running")
@@ -172,26 +176,21 @@ def create_shortcut():
 
 
 def main():
+    # yapf: disable
     ap = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    ap.add_argument('-q',
-                    '--quiet',
-                    action='store_true',
-                    help='quite mode, no open new browser')
-    ap.add_argument('-d',
-                    '--debug',
-                    action='store_true',
-                    help='open debug mode')
-    ap.add_argument('--shortcut',
-                    action='store_true',
-                    help='create shortcut in desktop')
-    ap.add_argument('-p',
-                    '--port',
-                    type=int,
-                    default=17310,
-                    help='local listen port for weditor')
-
+    ap.add_argument("-v", "--version", action="store_true", help="show version")
+    ap.add_argument('-q', '--quiet', action='store_true', help='quite mode, no open new browser')
+    ap.add_argument('-d', '--debug', action='store_true', help='open debug mode')
+    ap.add_argument('-p', '--port', type=int, default=17310, help='local listen port for weditor')
+    ap.add_argument('--shortcut', action='store_true', help='create shortcut in desktop')
     args = ap.parse_args()
+    # yapf: enable
+
+    if args.version:
+        print(__version__)
+        return
+
     if args.shortcut:
         create_shortcut()
         return

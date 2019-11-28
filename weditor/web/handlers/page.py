@@ -15,6 +15,7 @@ import xmlrpc.client
 # `pip install futures` for python2
 from concurrent.futures import ThreadPoolExecutor
 from subprocess import PIPE
+from typing import Union
 
 import six
 import tornado
@@ -269,7 +270,6 @@ class DeviceWidgetListHandler(BaseHandler):
                 "size": im.size,
                 "url": f"http://localhost:17310/widgets/{widget_id}/screenshot.jpg",
             },
-            # "center_point": [cx, cy],
             # "hierarchy": data['hierarchy'],
         } # yapf: disable
 
@@ -336,10 +336,11 @@ class RpcClient():
         if not cls.is_running():
             cls.launch_server()
         return cls.get_xmlrpc_client()
-    
+
     @classmethod
     def get_xmlrpc_client(cls):
-        return xmlrpc.client.ServerProxy(cls.rpc_remote_address, allow_none=True)
+        return xmlrpc.client.ServerProxy(cls.rpc_remote_address,
+                                         allow_none=True)
 
     @classmethod
     def is_running(cls):
@@ -349,7 +350,7 @@ class RpcClient():
                 return True
         except Exception as e:
             return False
-    
+
     @classmethod
     def launch_server(cls, timeout=10.0):
         logger.info(f"launch rpc server, listen on port {cls.rpc_port}")
@@ -388,7 +389,7 @@ class RpcClient():
             logger.info("rpcserver quit success")
         except Exception as e:
             logger.warning("rpcserver quit error: %s", e)
-        
+
 
 class DeviceCodeDebugHandler(BaseHandler):
     executor = ThreadPoolExecutor(max_workers=4)
@@ -403,7 +404,6 @@ class DeviceCodeDebugHandler(BaseHandler):
     @run_on_executor
     def _run(self, device_id, code):
         client = RpcClient.get_instance()
-        # client.connect(device_id)
         logger.debug("RUN code: %s", code)
         output = client.run_python_code(device_id, code)
         return output

@@ -27,6 +27,7 @@ window.vm = new Vue({
     platform: localStorage.platform || 'Android',
     serial: localStorage.serial || '',
     activity: localStorage.activity || "",
+    packageName: localStorage.packageName || "",
     imagePool: null,
     loading: false,
     screenWebSocket: null,
@@ -233,7 +234,6 @@ window.vm = new Vue({
             self.canvasStyle.opacity = 1.0;
           }
           if (localStorage.jsonHierarchy) {
-            // self.originNodes = JSON.parse(localStorage.jsonHierarchy);
             let source = JSON.parse(localStorage.jsonHierarchy);
             self.drawAllNodeFromSource(source);
             self.loading = false;
@@ -304,7 +304,7 @@ window.vm = new Vue({
           this.deviceId = lastDeviceId;
         })
     },
-    keyevent: function (meta) {
+    doKeyevent: function (meta) {
       var code = 'd.press("' + meta + '")'
       if (this.platform != 'Android' && meta == 'home') {
         code = 'd.home()'
@@ -549,7 +549,9 @@ window.vm = new Vue({
       }
     },
     delayReload(msec) {
-      setTimeout(this.dumpHierarchyWithScreen, msec || 1000);
+      if (!this.liveScreen) {
+        setTimeout(this.dumpHierarchyWithScreen, msec || 1000);
+      }
     },
     dumpHierarchyWithScreen() {
       var self = this;
@@ -573,9 +575,12 @@ window.vm = new Vue({
           localStorage.setItem("xmlHierarchy", ret.xmlHierarchy);
           localStorage.setItem('jsonHierarchy', JSON.stringify(ret.jsonHierarchy));
           localStorage.setItem("activity", ret.activity);
+          localStorage.setItem("packageName", ret.packageName);
           localStorage.setItem("windowSize", ret.windowSize);
           this.activity = ret.activity; // only for android
+          this.packageName = ret.packageName;
           this.drawAllNodeFromSource(ret.jsonHierarchy);
+          this.nodeSelected = null;
         })
     },
     screenRefresh: function () {
@@ -723,6 +728,7 @@ window.vm = new Vue({
     },
     codeRunDebugCode: function (code) {
       this.codeRunning = true;
+      this.console.content = ""
       this.tabActiveName = "console";
       if (!this.deviceId) {
         return this.doConnect().then(() => {
@@ -826,8 +832,11 @@ window.vm = new Vue({
           activity: localStorage.activity,
         })
       }).then(ret => {
-        console.log(ret)
-        this.codeInsert(`d.widget.click("${ret.id}#${ret.note}")`)
+        const code = `d.widget.click("${ret.id}#${ret.note}")`;
+        this.codeInsert(code)
+        this.nodeSelected = null;
+        this.codeRunDebugCode(code)
+          .then(this.delayReload)
       })
     },
     doTap: function (node) {
@@ -837,15 +846,9 @@ window.vm = new Vue({
       // FIXME(ssx): put into a standalone function
       code += ".click()"
       self.codeInsert(code);
-
-      this.loading = true;
+      this.nodeSelected = null;
       this.codeRunDebugCode(code)
-        .then(function () {
-          self.delayReload();
-        })
-        .fail(function () {
-          self.loading = false;
-        })
+        .then(this.delayReload)
     },
     doPositionTap: function (x, y) {
       var code = 'd.click(' + x + ', ' + y + ')'
