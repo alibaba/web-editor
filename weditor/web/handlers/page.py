@@ -11,8 +11,6 @@ import subprocess
 import sys
 import time
 import traceback
-import xmlrpc.client
-# `pip install futures` for python2
 from concurrent.futures import ThreadPoolExecutor
 from subprocess import PIPE
 from typing import Union
@@ -27,6 +25,8 @@ from tornado.escape import json_decode
 from ..device import connect_device, get_device
 from ..utils import tostr
 from ..version import __version__
+from ..jsonrpc_client import ConsoleKernel
+
 
 pathjoin = os.path.join
 
@@ -64,8 +64,6 @@ gqueue = queue.Queue()
 
 class BuildWSHandler(tornado.websocket.WebSocketHandler):
     executor = ThreadPoolExecutor(max_workers=4)
-
-    # proc = None
 
     def open(self):
         print("Websocket opened")
@@ -312,85 +310,6 @@ class DeviceScreenshotHandler(BaseHandler):
             self.write({"description": traceback.print_exc()})
 
 
-class StringBuffer():
-    def __init__(self):
-        self.encoding = 'utf-8'
-        self.buf = io.BytesIO()
-
-    def write(self, data):
-        if isinstance(data, six.string_types):
-            data = data.encode(self.encoding)
-        self.buf.write(data)
-
-    def getvalue(self):
-        return self.buf.getvalue().decode(self.encoding)
-
-
-class RpcClient():
-    rpc_running = False
-    rpc_port = 17320
-    rpc_remote_address = f"http://localhost:{rpc_port}"
-
-    @classmethod
-    def get_instance(cls):
-        if not cls.is_running():
-            cls.launch_server()
-        return cls.get_xmlrpc_client()
-
-    @classmethod
-    def get_xmlrpc_client(cls):
-        return xmlrpc.client.ServerProxy(cls.rpc_remote_address,
-                                         allow_none=True)
-
-    @classmethod
-    def is_running(cls):
-        try:
-            s = cls.get_xmlrpc_client()
-            if s.ping() == "pong":
-                return True
-        except Exception as e:
-            return False
-
-    @classmethod
-    def launch_server(cls, timeout=10.0):
-        logger.info(f"launch rpc server, listen on port {cls.rpc_port}")
-        curdir = os.path.dirname(os.path.abspath(__file__))
-        rpcserver_path = os.path.join(curdir, "../../rpcserver.py")
-        p = subprocess.Popen(
-            [sys.executable, rpcserver_path, "-p",
-             str(cls.rpc_port)],
-            stdout=sys.stdout,
-            stderr=sys.stderr)
-
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            if p.poll() is not None:
-                raise RuntimeError("rpcserver launch error")
-
-            s = xmlrpc.client.ServerProxy(cls.rpc_remote_address)
-            try:
-                if s.ping() == "pong":
-                    return p
-            except Exception as e:
-                logger.debug("check: %s", e)
-            time.sleep(.5)
-
-        p.terminate()
-        raise RuntimeError("rpcserver launch timeout")
-
-    @classmethod
-    def stop(cls):
-        if not cls.is_running():
-            return
-        s = cls.get_xmlrpc_client()
-        try:
-            s.quit()
-        except ConnectionRefusedError:
-            logger.info("rpcserver quit success")
-        except Exception as e:
-            logger.warning("rpcserver quit error: %s", e)
-
-
 class DeviceCodeDebugHandler(BaseHandler):
     executor = ThreadPoolExecutor(max_workers=4)
 
@@ -403,38 +322,10 @@ class DeviceCodeDebugHandler(BaseHandler):
 
     @run_on_executor
     def _run(self, device_id, code):
-        client = RpcClient.get_instance()
         logger.debug("RUN code: %s", code)
-        output = client.run_python_code(device_id, code)
+        client = ConsoleKernel.get_singleton()
+        output = client.call_output("run_device_code", [device_id, code])
         return output
-
-    def run(self, device, code):
-        buffer = StringBuffer()
-        sys.stdout = buffer
-        sys.stderr = buffer
-
-        try:
-            is_eval = True
-            compiled_code = None
-            try:
-                compiled_code = compile(code, "<string>", "eval")
-            except SyntaxError:
-                is_eval = False
-                compiled_code = compile(code, "<string>", "exec")
-
-            self._global.update(d=device, time=time, os=os)
-            if is_eval:
-                ret = eval(code, self._global)
-                buffer.write((">>> " + repr(ret) + "\n"))
-            else:
-                exec(compiled_code, self._global)
-        except Exception:
-            buffer.write(traceback.format_exc())
-        finally:
-            sys.stdout = sys.__stdout__
-            sys.stderr = sys.__stderr__
-
-        return buffer.getvalue()
 
     async def post(self, device_id):
         start = time.time()

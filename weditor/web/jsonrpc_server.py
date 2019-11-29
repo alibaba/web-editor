@@ -22,9 +22,6 @@ _globals = {
     "u2": uiautomator2
 }
 
-MAGIC = "--IM-SEPARATOR--"
-
-
 def sleep(seconds):
     print("Wow")
     time.sleep(seconds)
@@ -128,20 +125,27 @@ class FakeOutput(object):
 
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--magic", required=True, help="magic text, must be unique")
+    args = parser.parse_args()
+
     methods = {
         "run_device_code": run_device_code,
         "pow": pow,
         "add": lambda a, b: a + b,
     }
-    with FakeOutput() as c:
-        c.write_json({"ready": True})
+    print(args.magic)
 
-        for line in sys.stdin:
+    for line in sys.stdin:
+        try:
             _handle_input(line, methods)
-            # print(MAGIC)
-            c.write_json({"finished": True})
+        except:
+            traceback.print_exc()
+        finally:
+            print(args.magic)
 
-    c.write_json({"quit": True})
 
 
 # {"jsonrpc": "2.0", "method": "pow", "params": [2, 5]}
