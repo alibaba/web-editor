@@ -109,7 +109,8 @@
           </div>
           <div class="panel-body">
             <div class="text-center">
-              <button class="btn btn-default btn-sm" :disabled="!nodeSelected" @click="doTapWidget()">Tap Widget(Beta)</button>
+              <button class="btn btn-default btn-sm" :disabled="!nodeSelected" @click="doTapWidget()">Tap
+                Widget(Beta)</button>
               <button class="btn btn-default btn-sm" :disabled="!nodeSelected" v-on:click="doTap()">Tap</button>
               <button class="btn btn-default btn-sm" v-on:click="doSendKeys('')">Send Keys</button>
               <!-- <button class="btn btn-default btn-sm" v-on:click="doClear()">Clear Text</button> -->
@@ -129,9 +130,9 @@
                   <td contenteditable v-text="activity"></td>
                 </tr>
                 <tr>
-                    <td>package</td>
-                    <td contenteditable v-text="packageName"></td>
-                  </tr>
+                  <td>package</td>
+                  <td contenteditable v-text="packageName"></td>
+                </tr>
               </template>
               <template v-if="['iOS', 'Neco'].includes(platform)">
                 <tr>
@@ -250,24 +251,26 @@
         <div class="panel panel-default" style="margin-bottom: 0px; border-bottom: 0px">
           <div class="panel-heading">
             <span class="glyphicon glyphicon-music"></span> Coding
-            <span class="pull-right">
+            <span class="pull-right coding-commands">
               <el-button icon="el-icon-delete" type="warning" size="mini" plain @click="clearCode">重置代码
               </el-button>
               <el-button icon="el-icon-document-copy" type="primary" size="mini" plain
-                @click="copyToClipboard(editor.getValue())">复制
+                @click="copyToClipboard(editor.getValue())">
               </el-button>
               <el-tooltip :open-delay="500" content="Command+Enter" placement="top">
-                <el-button type="primary" size="mini" plain @click="codeRunDebugCode(editor.getValue())"
-                  :loading="codeRunning">运行
+                <el-button type="primary" size="mini" plain icon="el-icon-caret-right"
+                  @click="codeRunDebugCode(editor.getValue())" :loading="codeRunning">
                 </el-button>
               </el-tooltip>
               <el-tooltip :open-delay="500" content="Command+Shift+Enter" placement="top">
                 <el-button type="primary" size="mini" plain @click="codeRunSelected" :loading="codeRunning">选中运行
                 </el-button>
               </el-tooltip>
-              <el-button type="primary" size="mini" plain :disabled="!codeRunning" @click="stopDebugging">
-                停止
-              </el-button>
+              <el-tooltip :open-delay="200" content="Stop debugging" placement="top">
+                <el-button type="primary" size="mini" plain :disabled="!codeRunning" @click="stopDebugging">
+                  停止
+                </el-button>
+              </el-tooltip>
             </span>
           </div>
         </div>

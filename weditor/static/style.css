@@ -208,3 +208,8 @@ i.inactive {
 .cursor-pointer {
   cursor: pointer;
 }
+
+.coding-commands>button.el-button{
+  padding: 7px 5px;
+  margin: 0px 2px;
+}
