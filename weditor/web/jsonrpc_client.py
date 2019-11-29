@@ -4,6 +4,7 @@
 import uuid
 import json
 import os
+import signal
 import subprocess
 import sys
 from subprocess import PIPE
@@ -13,14 +14,14 @@ from logzero import logger
 
 
 class ConsoleKernel():
-    __instance = None
+    __instance = {}
 
     @classmethod
-    def get_singleton(cls):
-        if cls.__instance is None:
+    def get_singleton(cls, name='default'):
+        if cls.__instance.get(name) is None:
             logger.info("create singleton process")
-            cls.__instance = ConsoleKernel()
-        return cls.__instance
+            cls.__instance[name] = ConsoleKernel()
+        return cls.__instance[name]
 
     def __init__(self):
         self._p = None
@@ -38,6 +39,10 @@ class ConsoleKernel():
                                    universal_newlines=True) # yapf: disable
         data, finished = self.read_response()
         assert finished == True, 'jsonrpc_server started failed'
+
+    def send_interrupt(self):
+        if not self.is_closed():
+            self._p.send_signal(signal.SIGINT)
 
     def is_closed(self):
         return self._p.poll() is not None

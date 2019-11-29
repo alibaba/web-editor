@@ -38,8 +38,7 @@ from tornado.log import enable_pretty_logging
 from .web.handlers.page import (
     BaseHandler, BuildWSHandler, DeviceCodeDebugHandler, DeviceConnectHandler,
     DeviceHierarchyHandler, DeviceHierarchyHandlerV2, DeviceScreenshotHandler,
-    DeviceWidgetListHandler, MainHandler, VersionHandler, WidgetPreviewHandler,
-    RpcClient)
+    DeviceWidgetListHandler, MainHandler, VersionHandler, WidgetPreviewHandler)
 from .web.handlers.proxy import StaticProxyHandler
 from .web.utils import current_ip, tostr
 from .web.version import __version__
@@ -59,7 +58,6 @@ def signal_handler(signum, frame):
 
 def stop_server():
     tornado.ioloop.IOLoop.instance().stop()
-    RpcClient.stop()
 
 
 def try_exit():

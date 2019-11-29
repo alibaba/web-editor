@@ -44,6 +44,10 @@ class BaseHandler(tornado.web.RequestHandler):
         self.set_status(204)  # no body
         self.finish()
 
+    def check_origin(self, origin):
+        """ allow cors request """
+        return True
+
 
 class VersionHandler(BaseHandler):
     def get(self):
@@ -189,9 +193,10 @@ class WidgetPreviewHandler(BaseHandler):
 
 
 class DeviceWidgetListHandler(BaseHandler):
-    __store_dir = "./widgets"
+    __store_dir = os.path.expanduser("~/.weditor/widgets")
 
     def generate_id(self):
+        os.makedirs(self.__store_dir, exist_ok=True)
         names = [
             name for name in os.listdir(self.__store_dir)
             if os.path.isdir(os.path.join(self.__store_dir, name))
@@ -313,13 +318,6 @@ class DeviceScreenshotHandler(BaseHandler):
 class DeviceCodeDebugHandler(BaseHandler):
     executor = ThreadPoolExecutor(max_workers=4)
 
-    def open(self):
-        print("Websocket opened")
-        self.proc = None
-
-    def check_origin(self, origin):
-        return True
-
     @run_on_executor
     def _run(self, device_id, code):
         logger.debug("RUN code: %s", code)
@@ -338,4 +336,11 @@ class DeviceCodeDebugHandler(BaseHandler):
             "success": True,
             "duration": int((time.time() - start) * 1000),
             "content": output,
+        })
+    
+    async def delete(self, device_id):
+        client = ConsoleKernel.get_singleton()
+        client.send_interrupt()
+        self.write({
+            "success": True,
         })

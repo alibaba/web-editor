@@ -726,6 +726,13 @@ window.vm = new Vue({
         console.log("screen websocket closed")
       }
     },
+    stopDebugging: function(){
+      // send SIGINT to python-kernel
+      return $.ajax({
+        method: 'delete',
+        url: LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.deviceId) + '/exec',
+      })
+    },
     codeRunDebugCode: function (code) {
       this.codeRunning = true;
       this.console.content = ""

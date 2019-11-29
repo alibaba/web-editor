@@ -134,6 +134,7 @@ def main():
     methods = {
         "run_device_code": run_device_code,
         "pow": pow,
+        "sleep": time.sleep,
         "add": lambda a, b: a + b,
     }
     print(args.magic)
@@ -150,6 +151,8 @@ def main():
 
 # {"jsonrpc": "2.0", "method": "pow", "params": [2, 5]}
 # {"jsonrpc": "2.0", "method": "run_device_code", "params": ["android:", "d.info"]}
+# {"jsonrpc": "2.0", "method": "sleep", "params": [25]}
+
 
 if __name__ == "__main__":
     main()

@@ -265,6 +265,9 @@
                 <el-button type="primary" size="mini" plain @click="codeRunSelected" :loading="codeRunning">选中运行
                 </el-button>
               </el-tooltip>
+              <el-button type="primary" size="mini" plain :disabled="!codeRunning" @click="stopDebugging">
+                停止
+              </el-button>
             </span>
           </div>
         </div>
