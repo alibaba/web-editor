@@ -652,10 +652,12 @@ window.vm = new Vue({
         setTimeout(this.loadLiveHierarchy, 500)
         return
       }
-      this.dumpHierarchy()
-        .then((source) => {
+      if (this.liveScreen) {
+        this.dumpHierarchy()
+        .then(() => {
           this.loadLiveHierarchy()
         })
+      }
     },
     loadLiveScreen: function () {
       var self = this;
