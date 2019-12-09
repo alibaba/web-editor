@@ -10,10 +10,10 @@ This project is hosted in <https://github.com/openatx/weditor>
 Only tested in `Google Chrome`, _IE_ seems not working well.
 
 ## Installation
-**Require Python3.5+**
+Tested with `python 3.6, 3.7`
 
 ```
-pip install --upgrade weditor
+pip3 install --upgrade weditor
 ```
 
 ## Usage
@@ -21,13 +21,13 @@ pip install --upgrade weditor
 Create Shortcut in Desktop
 
 ```
-python -m weditor --shortcut
+weditor --shortcut
 ```
 
 By click shortcut or run in command line
 
 ```
-python -m weditor
+weditor
 ```
 
 This command will start a local server with port 17310,
@@ -35,6 +35,7 @@ and then open a browser tab for you to editor you code.
 
 Port 17310 is to memorize the created day -- 2017/03/10
 
+To see more usage run `weditor -h`
 
 ## Hotkeys(Both Mac and Win)
 - Right click screen: `Dump Hierarchy`
@@ -46,7 +47,6 @@ Port 17310 is to memorize the created day -- 2017/03/10
 ### Hotkeys(only Win)
 - Ctrl+Enter: Run the whole code
 - Ctrl+Shift+Enter: Run selected code or current line if not selected
-
 
 ## For Developers
 See [DEVELOP.md](DEVELOP.md)

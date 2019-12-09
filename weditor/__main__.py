@@ -109,24 +109,32 @@ def make_app(settings={}):
     return application
 
 
-def check_running(port: int):
+def get_running_version(addr: str):
     """
-    sys.exit if already running
+    Returns:
+        None if not running
+        version string if running
     """
     try:
-        r = requests.get(f"http://localhost:{port}/api/v1/version",
+        r = requests.get(f"{addr}/api/v1/version",
                          timeout=2.0)
         if r.status_code == 200:
-            version = r.json().get("version", "dev")
-            sys.exit(f"Another weditor({version}) is already running")
+            return r.json().get("version", "dev")
     except requests.exceptions.ConnectionError:
         pass
     except Exception as e:
         print("Unknown error: %r" % e)
 
 
-def run_web(debug=False, port=17310, open_browser=False):
-    check_running(port)
+def run_web(debug=False, port=17310, open_browser=False, force_quit=False):
+    version = get_running_version(f"http://localhost:{port}")
+    if version:
+        if force_quit:
+            logger.info(f"quit previous weditor server (version: {version})")
+            requests.get(f"http://localhost:{port}/quit")
+            time.sleep(.5)
+        else:
+            sys.exit(f"Another weditor({version}) is already running")
 
     if open_browser:
         # webbrowser.open(url, new=2)
@@ -181,6 +189,7 @@ def main():
     ap.add_argument('-q', '--quiet', action='store_true', help='quite mode, no open new browser')
     ap.add_argument('-d', '--debug', action='store_true', help='open debug mode')
     ap.add_argument('-p', '--port', type=int, default=17310, help='local listen port for weditor')
+    ap.add_argument("-f", "--force-quit", action='store_true', help="force quit before start")
     ap.add_argument('--shortcut', action='store_true', help='create shortcut in desktop')
     args = ap.parse_args()
     # yapf: enable
@@ -194,7 +203,7 @@ def main():
         return
 
     open_browser = not args.quiet
-    run_web(args.debug, args.port, open_browser)
+    run_web(args.debug, args.port, open_browser, args.force_quit)
 
 
 if __name__ == '__main__':
