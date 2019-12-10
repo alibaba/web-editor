@@ -15,8 +15,8 @@ from .page import BaseHandler
 class StaticProxyHandler(tornado.web.StaticFileHandler):
     http_client = tornado.httpclient.AsyncHTTPClient()
 
-    def initialize(self, path: str ="/", default_filename: str = None) -> None:
-        self.root = path
+    def initialize(self, path: str = None, default_filename: str = None) -> None:
+        self.root = path if path else os.path.expanduser("~")
         self.default_filename = default_filename
 
     async def download_file(self, path: str) -> str:
