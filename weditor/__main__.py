@@ -202,6 +202,10 @@ def main():
         create_shortcut()
         return
 
+    if sys.platform == 'win32' and sys.version_info[:2] == (3, 8):
+        import asyncio
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     open_browser = not args.quiet
     run_web(args.debug, args.port, open_browser, args.force_quit)
 
