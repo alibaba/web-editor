@@ -16,6 +16,13 @@ Tested with `python 3.6, 3.7`
 pip3 install --upgrade weditor
 ```
 
+For developers
+
+```bash
+git clone https://github.com/openatx/weditor
+pip3 install -e weditor
+```
+
 ## Usage
 
 Create Shortcut in Desktop
