@@ -206,7 +206,8 @@ def main():
         import asyncio
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    open_browser = not args.quiet
+    open_browser = not args.quiet and not args.debug
+    print(args.quiet, args.debug, open_browser)
     run_web(args.debug, args.port, open_browser, args.force_quit)
 
 

@@ -497,8 +497,99 @@ window.vm = new Vue({
         }
       }]);
 
-      // editor.setReadOnly(true);
-      // editor.setHighlightActiveLine(false);
+      const AndroidCompletions = [
+        { name: "应用安装", value: "d.app_install" },
+        { name: "启动应用", value: "d.app_start" },
+        { name: "清空应用", value: "d.app_clear" },
+        { name: "停止应用", value: "d.app_stop" },
+        { name: "当前应用", value: "d.app_current()" },
+        { name: "获取应用信息", value: "d.app_info" },
+        { name: "等待应用运行", value: "d.app_wait" },
+        { name: "窗口大小", value: "d.window_size()" },
+        { name: "截图", value: "d.screenshot()" },
+        { name: "推送文件", value: "d.push" },
+        { name: "执行shell命令", value: "d.shell" },
+        { name: "shell: pwd", value: 'd.shell("pwd").output' },
+        { name: "XPath", value: "d.xpath" },
+        { name: "XPath 点击", value: 'd.xpath("购买").click()' },
+        { name: "WLAN IP", value: "d.wlan_ip" },
+        { name: "剪贴板设置", value: "d.clipboard = " },
+        { name: "剪贴板获取", value: "d.clipboard" },
+        { name: "上滑60%", value: 'd.swipe_ext("up", 0.6)' },
+        { name: "右滑60%", value: 'd.swipe_ext("right", 0.6)' },
+        { name: "显示信息", value: "d.info" },
+        { name: "最长等待时间", value: "d.implicitly_wait(20)" },
+        { name: "常用设置", value: "d.settings" },
+        { name: "服务最大空闲时间", value: "d.set_new_command_timeout" },
+        { name: "调试开关", value: "d.debug = True" },
+        { name: "坐标点击 x,y", value: "d.click" },
+        { name: "获取图层", value: "d.dump_hierarchy()" },
+        { name: "监控", value: "d.watcher" },
+        { name: "停止uiautomator", value: "d.uiautomator.stop()" },
+        { name: "视频录制", value: "d.screenrecord('output.mp4')" },
+        { name: "停止视频录制", value: "d.screenrecord.stop()" },
+        { name: "回到桌面", value: 'd.press("home")' },
+        { name: "返回", value: 'd.press("back")' },
+        { name: "等待activity", value: 'd.wait_activity("xxxx", timeout=10)' },
+        { name: "abc", value: 'd.wait_activity("xxxx", timeout=10)' }
+      ]
+
+      const iOSCompletions = [
+        { name: "状态信息", value: "d.status()" },
+        { name: "等待就绪", value: "d.wait_ready(timeout=300)" },
+        { name: "HOME", value: "d.home()" },
+        { name: "截图", value: "d.screenshot()" },
+        { name: "截图保存", value: "d.screenshot().save" },
+        { name: "截图+旋转+保存", value: 's.screenshot().transpose(Image.ROTATE_90).save("correct.png")' },
+        { name: "Healthcheck", value: "d.healthcheck()" },
+        { name: "启动应用", value: "d.app_launch" },
+        { name: "启动应用设置", value: "d.app_launch('com.apple.Preferences')" },
+        { name: "当前应用", value: "d.app_current()" },
+        { name: "将应用放到前台", value: "d.app_activate" },
+        { name: "杀掉应用", value: "d.app_terminate" },
+        { name: "获取应用状态", value: "d.app_state" },
+        { name: "设置搜索等待时间", value: "d.implicitly_wait(30.0)" },
+        { name: "窗口UI大小", value: "d.window_size()" },
+        { name: "点击", value: "d.click" },
+        { name: "双击", value: "d.double_tap" },
+        { name: "滑动", value: "d.swipe" },
+        { name: "从中央滑动到底部", value: "d.swipe(0.5, 0.5, 0.5, 0.99)" },
+        { name: "长按1s", value: "d.tap_hold(x, y, 1.0)" },
+        { name: "输入", value: "d.send_keys" },
+        { name: "弹窗点击", value: "d.alert.click(按钮名)" },
+        { name: "弹窗按钮", value: "d.alert.buttons()" },
+        { name: "等待弹窗", value: "d.alert.wait(timeout=20.0)" },
+        { name: "弹窗是否存在", value: "d.alert.exists" },
+      ]
+
+      let keywordCompleter = {
+        // identifierRegexps: [/\s+(abc)\.$/],
+        getCompletions: (editor, session, pos, prefix, callback) => {
+          // console.log("completer", prefix, pos, editor.session.getLine(pos.row))
+          if (prefix !== "d") {
+            callback(null, [])
+            return
+          }
+          const isAndroid = (this.platform === "Android")
+          callback(null, (isAndroid ? AndroidCompletions : iOSCompletions).map(v => {
+            return {
+              name: v.name, // 显示的名字,没什么乱用
+              value: v.value, // 插入的值
+              score: 1, // 分数越大，排名越靠前
+              meta: v.name, //描述,
+            }
+          }))
+        }
+      }
+      
+      let langTools = ace.require("ace/ext/language_tools")
+      langTools.addCompleter(keywordCompleter)
+
+      editor.setOptions({
+        enableLiveAutocompletion: true,
+      })
+      // editor.setTheme("ace/theme/monokai")
+
       editor.$blockScrolling = Infinity;
     },
     codeRunSelected() {
@@ -654,9 +745,9 @@ window.vm = new Vue({
       }
       if (this.liveScreen) {
         this.dumpHierarchy()
-        .then(() => {
-          this.loadLiveHierarchy()
-        })
+          .then(() => {
+            this.loadLiveHierarchy()
+          })
       }
     },
     loadLiveScreen: function () {
@@ -728,7 +819,7 @@ window.vm = new Vue({
         console.log("screen websocket closed")
       }
     },
-    stopDebugging: function(){
+    stopDebugging: function () {
       // send SIGINT to python-kernel
       return $.ajax({
         method: 'delete',
