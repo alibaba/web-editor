@@ -6,3 +6,4 @@ logzero
 # third-party dependencies
 uiautomator2>=1.0
 facebook-wda>=0.3
+cached_property
