@@ -455,6 +455,7 @@ window.vm = new Vue({
     },
     initEditor: function (editor) {
       var self = this;
+      editor.setTheme("ace/theme/monokai")
       editor.getSession().setMode("ace/mode/python");
       editor.getSession().setUseSoftTabs(true);
       editor.getSession().setUseWrapMode(true);
@@ -562,33 +563,76 @@ window.vm = new Vue({
         { name: "弹窗是否存在", value: "d.alert.exists" },
       ]
 
+      const xpathCompletions = [
+        { name: "点击", value: "click()" },
+        { name: "存在时点击", value: "click_exists()" },
+        { name: "等待元素出现", value: "wait()" },
+        { name: "等待元素消失", value: "wait_gone()" },
+        { name: "是否存在", value: "exists" },
+        { name: "控件截图", value: "screenshot()" },
+        { name: "控件上滑", value: 'swipe("up")' },
+        { name: "获取控件中心点坐标", value: "center()" },
+        { name: "信息", value: "info" },
+        { name: "获取Element", value: "get()" },
+        { name: "返回所有匹配", value: "all()" },
+        { name: "获取XpathElement", value: "get(timeout=10)" },
+      ]
+
+      const isAndroid = (this.platform === "Android")
+
       let keywordCompleter = {
-        // identifierRegexps: [/\s+(abc)\.$/],
+        identifierRegexps: [/\./],
         getCompletions: (editor, session, pos, prefix, callback) => {
-          // console.log("completer", prefix, pos, editor.session.getLine(pos.row))
-          if (prefix !== "d") {
+          console.log("completer", prefix, pos, "line", JSON.stringify(editor.session.getLine(pos.row)))
+          const line = editor.session.getLine(pos.row).trimLeft()
+
+          if (prefix === "." && /\w+\.xpath\([^)]+\)\./.test(line)) { // match: d.xpath("settings").
+            callback(null, xpathCompletions.map(v => {
+              return {
+                score: 1,
+                meta: v.name,
+                value: prefix + v.value,
+              }
+            }))
+          } else if (prefix === "d") {
+            callback(null, (isAndroid ? AndroidCompletions : iOSCompletions).map(v => {
+              return {
+                name: v.name, // 显示的名字,没什么乱用
+                value: v.value, // 插入的值
+                score: 1, // 分数越大，排名越靠前
+                meta: v.name, //描述,
+              }
+            }))
+          } else {
             callback(null, [])
-            return
           }
-          const isAndroid = (this.platform === "Android")
-          callback(null, (isAndroid ? AndroidCompletions : iOSCompletions).map(v => {
-            return {
-              name: v.name, // 显示的名字,没什么乱用
-              value: v.value, // 插入的值
-              score: 1, // 分数越大，排名越靠前
-              meta: v.name, //描述,
-            }
-          }))
+          // switch (prefix) {
+          //   case ".":
+          //     console.log(line, /\w+\.xpath\([^)]+\)\./.test(line))
+          //     if (){
+          //       console.log("callback click")
+
+          //     }
+          //     break;
+          //   case "d":
+
+          //     break;
+          //   default:
+
+          // }
+          // if (prefix === ".") {
+          // } else if (prefix === "d") {
+          // } else {
+          // }
         }
       }
-      
+
       let langTools = ace.require("ace/ext/language_tools")
-      langTools.addCompleter(keywordCompleter)
+      // langTools.addCompleter(keywordCompleter)
 
       editor.setOptions({
-        enableLiveAutocompletion: true,
+        enableLiveAutocompletion: [keywordCompleter],
       })
-      // editor.setTheme("ace/theme/monokai")
 
       editor.$blockScrolling = Infinity;
     },
