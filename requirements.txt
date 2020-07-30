@@ -2,8 +2,8 @@ tornado>=4.3
 six
 pillow
 logzero
+cached_property
 
 # third-party dependencies
-uiautomator2>=2.8.2
-facebook-wda>=0.7.7
-cached_property
+uiautomator2>=2.10.1
+facebook-wda>=1.0.5
