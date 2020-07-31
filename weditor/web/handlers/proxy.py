@@ -4,6 +4,7 @@
 import hashlib
 import os
 import re
+from typing import Optional
 
 import tornado.httpclient
 import tornado.web
@@ -18,6 +19,14 @@ class StaticProxyHandler(tornado.web.StaticFileHandler):
     def initialize(self, path: str = None, default_filename: str = None) -> None:
         self.root = path if path else os.path.expanduser("~")
         self.default_filename = default_filename
+
+    def validate_absolute_path(self, root: str, absolute_path: str) -> Optional[str]:
+        """
+        Override in order to fix error "xxxx is not in root static directory"
+        """
+        if not os.path.isfile(absolute_path):
+            raise HTTPError(403, "%s is not a file", self.path)
+        return absolute_path
 
     async def download_file(self, path: str) -> str:
         """
