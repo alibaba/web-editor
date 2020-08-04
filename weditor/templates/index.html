@@ -128,108 +128,53 @@
             <tbody>
               <template v-if="platform == 'Android'">
                 <tr>
-                  <td>activity</td>
+                  <td class="always-exists-attr">activity</td>
                   <td contenteditable v-text="activity"></td>
                 </tr>
+              </template>
+              <template>
                 <tr>
-                  <td>package</td>
-                  <td contenteditable v-text="packageName"></td>
+                  <td class="always-exists-attr">XPathLite</td>
+                  <td contenteditable v-text="elemXPathLite"></td>
+                </tr>
+                <!-- <tr>
+                  <td>XPath(full)</td>
+                  <td contenteditable v-text="elemXPathFull"></td>
+                </tr> -->
+                <tr>
+                  <td>
+                    <span @click="showCursorPercent = !showCursorPercent" class="cursor-pointer">
+                      坐标
+                      <i :class="{'inactive': !showCursorPercent}">%</i>
+                      <i :class="{'inactive': showCursorPercent}">px</i>
+                    </span>
+                  </td>
+                  <td>
+                    <span title="双击复制" @dblclick="copyToClipboard('('+cursorValue.x+', '+cursorValue.y+')')">
+                      ({{!cursorValue.x}}, {{!cursorValue.y}})
+                    </span>
+                    <a href="#" @click="doPositionTap(cursorValue.x, cursorValue.y)">点击</a>
+                  </td>
                 </tr>
               </template>
-              <template v-if="['iOS', 'Neco'].includes(platform)">
-                <tr>
-                  <td>name</td>
-                  <td contenteditable v-text="elem.name"></td>
+              <template>
+                <tr v-show="elem._type">
+                  <td>className</td>
+                  <td>
+                    <i v-if="platform == 'iOS'">XCUIElementType</i><span v-text="elem._type"></span>
+                    <small v-if="platform == 'iOS'" style="cursor: pointer; float: right;"
+                      @click="copyToClipboard('XCUIElementType' + elem._type)">复制</small>
+                  </td>
+                </tr>
+                <tr v-for="key in filterAttributeKeys(elem)" :key="key">
+                  <td>{{!"* " + key}}</td>
+                  <td><code v-text="elem[key]" class="prop-value"></code></td>
+                </tr>
+                <tr v-if="elem.rect">
+                  <td># rect</td>
+                  <td>{{!JSON.stringify(elem.rect)}}</td>
                 </tr>
               </template>
-              <template v-if="['Neco'].includes(platform)">
-                <tr>
-                  <td>tag</td>
-                  <td contenteditable v-text="elem.tag"></td>
-                </tr>
-                <tr v-if="elem.anchor">
-                  <td>anchor</td>
-                  <td contenteditable>{{!elem.anchor.x}}, {{!elem.anchor.y}}</td>
-                </tr>
-              </template>
-              <tr>
-                <td>className</td>
-                <td contenteditable v-text="elem._type"></td>
-              </tr>
-              <template v-if="['Android', 'Neco'].includes(platform)">
-                <tr>
-                  <td>description</td>
-                  <td contenteditable v-text="elem.description"></td>
-                </tr>
-                <tr>
-                  <td>text</td>
-                  <td contenteditable v-text="elem.text"></td>
-                </tr>
-              </template>
-              <template v-if="platform == 'Neco'">
-                <tr>
-                  <td>touchable</td>
-                  <td contenteditable v-text="elem.touchable"></td>
-                </tr>
-              </template>
-              <template v-if="platform == 'Android'">
-                <tr>
-                  <td>resourceId</td>
-                  <td contenteditable v-text="elem.resourceId"></td>
-                </tr>
-                <tr>
-                  <td>clickable</td>
-                  <td contenteditable v-text="elem.clickable"></td>
-                </tr>
-              </template>
-              <template v-if="elem.rect">
-                <tr>
-                  <td>label</td>
-                  <td contenteditable v-text="elem.label"></td>
-                </tr>
-                <tr>
-                  <td>x, y</td>
-                  <td>{{!elem.rect.x}}, {{!elem.rect.y}}</td>
-                </tr>
-                </tr>
-                <tr>
-                  <td>width</td>
-                  <td v-text="elem.rect.width"></td>
-                </tr>
-                <tr>
-                  <td>height</td>
-                  <td v-text="elem.rect.height"></td>
-                </tr>
-              </template>
-              <!-- common -->
-              <tr>
-                <td>enabled</td>
-                <td v-text="elem.enabled"></td>
-              </tr>
-              <tr>
-                <td>visible</td>
-                <td v-text="elem.visible"></td>
-              </tr>
-              <tr>
-                <td>XPath</td>
-                <td contenteditable v-text="elemXPathLite"></td>
-              </tr>
-              <!-- <tr>
-                <td>XPath(full)</td>
-                <td contenteditable v-text="elemXPathFull"></td>
-              </tr> -->
-              <tr>
-                <td>position
-                  <i @click="showCursorPercent = !showCursorPercent" :class="{'inactive': showCursorPercent}"
-                    class="fa fa-percent cursor-pointer" aria-hidden="true"></i>
-                </td>
-                <td>
-                  <span title="双击复制" @dblclick="copyToClipboard('('+cursorValue.x+', '+cursorValue.y+')')">
-                    ({{!cursorValue.x}}, {{!cursorValue.y}})
-                  </span>
-                  <a href="#" @click="doPositionTap(cursorValue.x, cursorValue.y)">点击</a>
-                </td>
-              </tr>
             </tbody>
             <tfoot></tfoot>
           </table>
@@ -270,7 +215,7 @@
               </el-tooltip>
               <el-tooltip :open-delay="200" content="Stop debugging" placement="top">
                 <el-button type="primary" size="mini" plain :disabled="!codeRunning" @click="stopDebugging">
-                  停止
+                  <i class="fa fa-stop"></i>
                 </el-button>
               </el-tooltip>
             </span>
@@ -353,13 +298,13 @@
 
 <!-- Baidu Analytics -->
 <script>
-var _hmt = _hmt || [];
-(function() {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?eefa59dfd5fb29fcc57a8b2437ad5ab1";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
+  var _hmt = _hmt || [];
+  (function () {
+    var hm = document.createElement("script");
+    hm.src = "https://hm.baidu.com/hm.js?eefa59dfd5fb29fcc57a8b2437ad5ab1";
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(hm, s);
+  })();
 </script>
 
 </html>

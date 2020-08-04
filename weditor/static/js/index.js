@@ -103,6 +103,7 @@ window.vm = new Vue({
       // scan nodes
       this.mapAttrCount = {}
       this.nodes.forEach((n) => {
+        this.incrAttrCount("label", n.label)
         this.incrAttrCount("resourceId", n.resourceId)
         this.incrAttrCount("text", n.text)
         this.incrAttrCount("_type", n._type)
@@ -113,7 +114,10 @@ window.vm = new Vue({
       const array = [];
       while (node && node._parentId) {
         const parent = this.originNodeMaps[node._parentId]
-        if (this.getAttrCount("resourceId", node.resourceId) === 1) {
+        if (this.getAttrCount("label", node.label) === 1) {
+          array.push(`*[@label="${node.label}"]`)
+          break
+        } else if (this.getAttrCount("resourceId", node.resourceId) === 1) {
           array.push(`*[@resource-id="${node.resourceId}"]`)
           break
         } else if (this.getAttrCount("text", node.text) === 1) {
@@ -247,11 +251,15 @@ window.vm = new Vue({
           self.loading = false;
         })
     },
+    filterAttributeKeys(elem) {
+      return Object.keys(elem).filter(k => {
+        if (['children', 'rect'].includes(k)) {
+          return false;
+        }
+        return ! k.startsWith("_");
+      })
+    },
     clearCode() {
-      // this.editor.setValue("")
-      // let value = this.editor.getValue()
-      // let codeBody = value.replace(/^(.*)$/gm, "    $1") // indent code
-
       const code = [
         "# coding: utf-8",
         "#",
