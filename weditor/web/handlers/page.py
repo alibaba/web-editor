@@ -6,26 +6,20 @@ import io
 import json
 import os
 import platform
-import queue
-import subprocess
 import sys
 import time
 import traceback
-from concurrent.futures import ThreadPoolExecutor
-from subprocess import PIPE
 from typing import Union
 
 import six
 import tornado
 from logzero import logger
 from PIL import Image
-from tornado.concurrent import run_on_executor
 from tornado.escape import json_decode
 
 from ..device import connect_device, get_device
 from ..utils import tostr
 from ..version import __version__
-from ..jsonrpc_client import ConsoleKernel
 
 
 pathjoin = os.path.join
@@ -61,87 +55,6 @@ class VersionHandler(BaseHandler):
 class MainHandler(BaseHandler):
     def get(self):
         self.render("index.html")
-
-
-gqueue = queue.Queue()
-
-
-class BuildWSHandler(tornado.websocket.WebSocketHandler):
-    executor = ThreadPoolExecutor(max_workers=4)
-
-    def open(self):
-        print("Websocket opened")
-        self.proc = None
-
-    def check_origin(self, origin):
-        return True
-
-    @run_on_executor
-    def _run(self, device_url, code):
-        """
-        Thanks: https://gist.github.com/mosquito/e638dded87291d313717
-        """
-        try:
-
-            print("DEBUG: run code\n%s" % code)
-            env = os.environ.copy()
-            env['UIAUTOMATOR_DEBUG'] = 'true'
-            if device_url and device_url != 'default':
-                env['ATX_CONNECT_URL'] = tostr(device_url)
-            start_time = time.time()
-
-            self.proc = subprocess.Popen([sys.executable, "-u"],
-                                         env=env,
-                                         stdout=PIPE,
-                                         stderr=subprocess.STDOUT,
-                                         stdin=PIPE)
-            self.proc.stdin.write(code)
-            self.proc.stdin.close()
-
-            for line in iter(self.proc.stdout.readline, b''):
-                print("recv subprocess:", repr(line))
-                if line is None:
-                    break
-                gqueue.put((self, {"buffer": line.decode('utf-8')}))
-            print("Wait exit")
-            exit_code = self.proc.wait()
-            duration = time.time() - start_time
-            ret = {
-                "buffer": "",
-                "result": {
-                    "exitCode": exit_code,
-                    "duration": int(duration) * 1000
-                }
-            }
-            gqueue.put((self, ret))
-            time.sleep(3)  # wait until write done
-        except Exception:
-            traceback.print_exc()
-
-    @tornado.gen.coroutine
-    def on_message(self, message):
-        jdata = json.loads(message)
-        if self.proc is None:
-            code = jdata['content']
-            device_url = jdata.get('deviceUrl')
-            yield self._run(device_url, code.encode('utf-8'))
-            self.close()
-        else:
-            self.proc.terminate()
-            # on Windows, kill is alais of terminate()
-            if platform.system() == 'Windows':
-                return
-            yield tornado.gen.sleep(0.5)
-            if self.proc.poll():
-                return
-            yield tornado.gen.sleep(1.2)
-            if self.proc.poll():
-                return
-            print("Force to kill")
-            self.proc.kill()
-
-    def on_close(self):
-        print("Websocket closed")
 
 
 class DeviceConnectHandler(BaseHandler):
@@ -314,33 +227,3 @@ class DeviceScreenshotHandler(BaseHandler):
             self.set_status(410)  # Gone
             self.write({"description": traceback.print_exc()})
 
-
-class DeviceCodeDebugHandler(BaseHandler):
-    executor = ThreadPoolExecutor(max_workers=4)
-
-    @run_on_executor
-    def _run(self, device_id, code):
-        logger.debug("RUN code: %s", code)
-        client = ConsoleKernel.get_singleton()
-        output = client.call_output("run_device_code", [device_id, code])
-        return output
-
-    async def post(self, device_id):
-        start = time.time()
-        d = get_device(device_id)
-        logger.debug("deviceId: %s", device_id)
-        code = self.get_argument('code')
-
-        output = await self._run(device_id, code)
-        self.write({
-            "success": True,
-            "duration": int((time.time() - start) * 1000),
-            "content": output,
-        })
-    
-    async def delete(self, device_id):
-        client = ConsoleKernel.get_singleton()
-        client.send_interrupt()
-        self.write({
-            "success": True,
-        })

@@ -36,7 +36,7 @@ from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
 
 from .web.handlers.page import (
-    BaseHandler, BuildWSHandler, DeviceCodeDebugHandler, DeviceConnectHandler,
+    BaseHandler, DeviceConnectHandler,
     DeviceHierarchyHandler, DeviceHierarchyHandlerV2, DeviceScreenshotHandler,
     DeviceWidgetListHandler, MainHandler, VersionHandler, WidgetPreviewHandler)
 from .web.handlers.proxy import StaticProxyHandler
@@ -94,7 +94,7 @@ def make_app(settings={}):
             (r"/api/v1/crop", CropHandler),
             (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
             (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
-            (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
+            # (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
             (r"/api/v1/devices/([^/]+)/widget", DeviceWidgetListHandler),
             (r"/api/v1/widgets", DeviceWidgetListHandler),  # add widget
             (r"/api/v1/widgets/([^/]+)", DeviceWidgetListHandler),
@@ -108,7 +108,7 @@ def make_app(settings={}):
             # cache static assets
             (r"/(unpkg.com/.*)", StaticProxyHandler),
             (r"/(cdn.jsdelivr.net/.*)", StaticProxyHandler),
-            (r"/ws/v1/build", BuildWSHandler),
+            # (r"/ws/v1/build", BuildWSHandler),
             (r"/ws/v1/python", PythonShellHandler),
             (r"/quit", QuitHandler),
         ],
