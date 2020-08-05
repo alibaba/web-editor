@@ -392,7 +392,7 @@ window.vm = new Vue({
       if (this.platform != 'Android' && meta == 'home') {
         code = 'd.home()'
       }
-      return this.codeRunDebugCode(code)
+      return this.runPythonWithConnect(code)
         .then(function () {
           return this.codeInsert(code);
         }.bind(this))
@@ -559,7 +559,7 @@ window.vm = new Vue({
           mac: 'Command-B'
         },
         exec: function (editor) {
-          self.codeRunDebugCode(editor.getValue())
+          self.runPythonWithConnect(editor.getValue())
         },
       }, {
         name: 'build',
@@ -568,7 +568,7 @@ window.vm = new Vue({
           mac: 'Command-Enter'
         },
         exec: function (editor) {
-          self.codeRunDebugCode(editor.getValue())
+          self.runPythonWithConnect(editor.getValue())
         },
       }, {
         name: "build-inline",
@@ -735,7 +735,7 @@ window.vm = new Vue({
         this.pyshell.lineno.offset = editor.getSelectionRange().start.row
       }
       this.pyshell.lineno.current = this.pyshell.lineno.offset // 重置编辑器当前行号
-      return this.codeRunDebugCode(code)
+      return this.runPythonWithConnect(code)
     },
     resizeScreen(img) {
       // check if need update
@@ -1041,13 +1041,14 @@ window.vm = new Vue({
     stopDebugging() {
       this.pyshell.ws.send(JSON.stringify({ method: "keyboardInterrupt" }))
     },
-    codeRunDebugCode(code) {
+    runPythonWithConnect(code) {
       this.tabActiveName = "console"
       if (!this.deviceId) {
         return this.doConnect().then(() => {
-          this.codeRunDebugCode(code)
+          this.runPythonWithConnect(code)
         })
       }
+      this.pyshell.lineno.offset = 0
       return this.runPython(code)
     },
     codeInsertPrepare: function (line) {
@@ -1096,12 +1097,12 @@ window.vm = new Vue({
       const code = `d.send_keys("${text}", clear=True)`
       this.loading = true;
       this.codeInsert(code);
-      this.codeRunDebugCode(code)
+      this.runPythonWithConnect(code)
         .then(this.delayReload)
     },
     doClear: function () {
       var code = 'd.clear_text()'
-      this.codeRunDebugCode(code)
+      this.runPythonWithConnect(code)
         .then(this.delayReload)
         .then(function () {
           return this.codeInsert(code);
@@ -1135,7 +1136,7 @@ window.vm = new Vue({
         const code = `d.widget.click("${ret.id}#${ret.note}")`;
         this.codeInsert(code)
         this.nodeSelected = null;
-        this.codeRunDebugCode(code)
+        this.runPythonWithConnect(code)
           .then(this.delayReload)
       })
     },
@@ -1147,13 +1148,13 @@ window.vm = new Vue({
       code += ".click()"
       self.codeInsert(code);
       this.nodeSelected = null;
-      this.codeRunDebugCode(code)
+      this.runPythonWithConnect(code)
         .then(this.delayReload)
     },
     doPositionTap: function (x, y) {
       var code = 'd.click(' + x + ', ' + y + ')'
       this.codeInsert(code);
-      this.codeRunDebugCode(code)
+      this.runPythonWithConnect(code)
         .then(this.delayReload)
     },
     generateNodeSelectorKwargs: function (node) {

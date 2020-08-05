@@ -212,7 +212,7 @@
               </el-tooltip>
               <el-tooltip :open-delay="500" content="Command+Enter" placement="top">
                 <el-button type="primary" size="mini" plain icon="el-icon-caret-right"
-                  @click="codeRunDebugCode(editor.getValue())" :loading="codeRunning">
+                  @click="runPythonWithConnect(editor.getValue())" :loading="codeRunning">
                 </el-button>
               </el-tooltip>
               <el-tooltip :open-delay="200" content="Stop debugging" placement="top">
