@@ -213,3 +213,29 @@ i.inactive {
   padding: 7px 5px;
   margin: 0px 2px;
 }
+
+/* Ref: https://ourcodeworld.com/articles/read/1052/how-to-add-toggle-breakpoints-on-the-ace-editor-gutter */
+.ace_gutter-cell.ace_breakpoint {
+  border-radius: 0px 20px 20px 0px;
+  /* Change the color of the breakpoint if you want */
+  /* box-shadow: 0px 0px 1px 1px red inset; */
+  background-color: darkgoldenrod;
+  color: white;
+}
+
+/* word "exercised" from Youdao
+    > Lines that are highlighted light blue were exercised in the test run, and lines that are highlighted reddish brown were not. 
+*/
+div.ace_gutter-cell.ace_code_exercised { /* code already runed
+  border-radius: 0px 20px 20px 0px;
+  /* Change the color of the breakpoint if you want */
+  /* box-shadow: 0px 0px 1px 1px red inset; */
+  border-right: 2px solid grey;
+  padding-right: 11px;
+  /* background-color: darkgoldenrod; */
+  /* color: black; */
+}
+
+.prop-value {
+  white-space: pre;
+}

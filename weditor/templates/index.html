@@ -49,11 +49,12 @@
             </el-select> -->
             <input type="text" v-model="serial" class="form-control" v-bind:placeholder="deviceUrl">
           </div>
-          <button type="submit" class="btn btn-default" v-on:click="doConnect">
+          <button type="submit" class="btn btn-default" v-on:click="doConnect" :disabled="connecting">
             Connect
+            <i v-if="connecting" class="fa fa-spinner fa-spin"></i>
             <span v-if="deviceId" class="glyphicon glyphicon-grain color-green"></span>
           </button>
-          <button :disabled="loading" class="btn btn-default" v-on:click="dumpHierarchyWithScreen()">
+          <button :disabled="loading || connecting" class="btn btn-default" v-on:click="dumpHierarchyWithScreen()">
             <i class="fa fa-refresh" :class='{"fa-spin": dumping}'></i> Dump Hierarchy
           </button>
           <template v-if="platform == 'Android'">
@@ -202,18 +203,16 @@
           <div class="panel-heading">
             <span class="glyphicon glyphicon-music"></span> Coding
             <span class="pull-right coding-commands">
-              <el-button icon="el-icon-delete" type="warning" size="mini" plain @click="clearCode">重置代码
+              <el-button @click="initPythonWebSocket" size="mini" style="color: red;" v-if="!pyshell.wsOpen">
+                <i class="fa fa-unlink"></i> 点击重连
               </el-button>
-              <el-button icon="el-icon-document-copy" type="primary" size="mini" plain
-                @click="copyToClipboard(editor.getValue())">
-              </el-button>
+              <el-tooltip :open-delay="500" content="Command+Shift+Enter" placement="top">
+                <el-button type="primary" size="mini" plain @click="codeRunSelected" :loading="codeRunning">单行或选中运行
+                </el-button>
+              </el-tooltip>
               <el-tooltip :open-delay="500" content="Command+Enter" placement="top">
                 <el-button type="primary" size="mini" plain icon="el-icon-caret-right"
                   @click="codeRunDebugCode(editor.getValue())" :loading="codeRunning">
-                </el-button>
-              </el-tooltip>
-              <el-tooltip :open-delay="500" content="Command+Shift+Enter" placement="top">
-                <el-button type="primary" size="mini" plain @click="codeRunSelected" :loading="codeRunning">选中运行
                 </el-button>
               </el-tooltip>
               <el-tooltip :open-delay="200" content="Stop debugging" placement="top">
@@ -221,6 +220,14 @@
                   <i class="fa fa-stop"></i>
                 </el-button>
               </el-tooltip>
+              <el-button icon="el-icon-delete" type="warning" size="mini" plain @click="clearCode">重置代码
+              </el-button>
+              <el-button icon="el-icon-document-copy" type="primary" size="mini" plain
+                @click="copyToClipboard(editor.getValue())">
+              </el-button>
+              <el-button type="danger" size="mini" plain @click="restartKernel">
+                <i title="重启服务" class="fa fa-repeat"></i> <span v-if="pyshell.restarting"> ...</span>
+              </el-button>
             </span>
           </div>
         </div>
@@ -250,8 +257,9 @@
           </el-tab-pane>
           <el-tab-pane label="Console" name="console">
             <div id="console">
-              <img v-if="codeRunning && !console.content" src="/static/running.svg">
-              <pre v-text="console.content"></pre>
+              <img v-if="codeRunning" src="/static/running.svg">
+              <pre
+                ref="console"><span style="cursor: pointer" v-for="data in pyshell.consoleData" @click="gotoCursorLine(data.lineno)" v-text="data.value"></span></pre>
             </div>
           </el-tab-pane>
         </el-tabs>

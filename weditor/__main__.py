@@ -40,6 +40,7 @@ from .web.handlers.page import (
     DeviceHierarchyHandler, DeviceHierarchyHandlerV2, DeviceScreenshotHandler,
     DeviceWidgetListHandler, MainHandler, VersionHandler, WidgetPreviewHandler)
 from .web.handlers.proxy import StaticProxyHandler
+from .web.handlers.shell import PythonShellHandler
 from .web.utils import current_ip, tostr
 from .web.version import __version__
 
@@ -108,6 +109,7 @@ def make_app(settings={}):
             (r"/(unpkg.com/.*)", StaticProxyHandler),
             (r"/(cdn.jsdelivr.net/.*)", StaticProxyHandler),
             (r"/ws/v1/build", BuildWSHandler),
+            (r"/ws/v1/python", PythonShellHandler),
             (r"/quit", QuitHandler),
         ],
         **settings)

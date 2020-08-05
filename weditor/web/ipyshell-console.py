@@ -140,7 +140,8 @@ def main():
 
             try:
                 # Read exec-code from stdin
-                stderr.write(">>> ")
+                if stderr.isatty():
+                    stderr.write(">>> ")
                 stderr.flush()
                 line = stdin_readline()
 
