@@ -259,7 +259,7 @@
             <div id="console">
               <img v-if="codeRunning" src="/static/running.svg">
               <pre
-                ref="console"><span style="cursor: pointer" v-for="data in pyshell.consoleData" @click="gotoCursorLine(data.lineno)" v-text="data.value"></span></pre>
+                ref="console"><span style="cursor: pointer" v-for="data in pyshell.consoleData" @dblclick="gotoCursorLine(data.lineno)" v-text="data.value"></span></pre>
             </div>
           </el-tab-pane>
         </el-tabs>

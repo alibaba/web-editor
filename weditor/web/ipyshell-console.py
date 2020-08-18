@@ -90,6 +90,9 @@ def mock_stdout_stderr(prefix="WRT:"):
     try:
 
         class MockStdout:
+            def isatty(self) -> bool:
+                return False
+
             def write(self, data: str):
                 try:
                     if data != "":
