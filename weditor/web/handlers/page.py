@@ -5,20 +5,14 @@ import base64
 import io
 import json
 import os
-import platform
-import sys
-import time
 import traceback
-from typing import Union
 
-import six
 import tornado
 from logzero import logger
 from PIL import Image
 from tornado.escape import json_decode
 
 from ..device import connect_device, get_device
-from ..utils import tostr
 from ..version import __version__
 
 

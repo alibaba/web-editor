@@ -1,19 +1,15 @@
 # coding: utf-8
 #
 
-import hashlib
 import os
-import re
 from typing import Optional
 
 import tornado.httpclient
 import tornado.web
-from logzero import logger
-
-from .page import BaseHandler
 
 
 class StaticProxyHandler(tornado.web.StaticFileHandler):
+    CACHE_DIR = os.path.expanduser("~/.weditor/cache")
     http_client = tornado.httpclient.AsyncHTTPClient()
 
     def initialize(self, path: str = None, default_filename: str = None) -> None:
@@ -25,7 +21,7 @@ class StaticProxyHandler(tornado.web.StaticFileHandler):
         Override in order to fix error "xxxx is not in root static directory"
         """
         if not os.path.isfile(absolute_path):
-            raise HTTPError(403, "%s is not a file", self.path)
+            raise tornado.web.HTTPError(403, "%s is not a file", self.path)
         return absolute_path
 
     async def download_file(self, path: str) -> str:
@@ -40,11 +36,13 @@ class StaticProxyHandler(tornado.web.StaticFileHandler):
         if os.path.exists(cache_path):
             return cache_path
         
-        # cache to local directory
-        local_cache_dir = os.path.expanduser("~/.weditor/cache")
-        cache_path = os.path.join(local_cache_dir, path)
-        if os.path.exists(cache_path):
-            return cache_path
+        if not self.settings['debug']:
+            # cache to local directory
+            # self.settings.get("static_path"), "cdn_libraries", path)
+            cache_path = os.path.join(self.CACHE_DIR, path)
+
+            if os.path.exists(cache_path):
+                return cache_path
         
         os.makedirs(os.path.dirname(cache_path), exist_ok=True)
 
