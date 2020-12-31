@@ -243,7 +243,7 @@ def main():
         cmd_quit(args.port)
         return
 
-    if sys.platform == 'win32' and sys.version_info[:2] == (3, 8):
+    if sys.platform == 'win32' and sys.version_info[:2] >= (3, 8):
         import asyncio
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 

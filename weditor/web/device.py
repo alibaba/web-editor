@@ -2,17 +2,23 @@
 #
 
 import abc
+
+import uiautomator2 as u2
+import wda
+from logzero import logger
 from PIL import Image
+
 from . import uidumplib
 
 
 class DeviceMeta(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def screenshot(self) -> Image.Image:
         pass
 
     def dump_hierarchy(self) -> str:
         pass
-    
+
     @abc.abstractproperty
     def device(self):
         pass
@@ -20,7 +26,6 @@ class DeviceMeta(metaclass=abc.ABCMeta):
 
 class _AndroidDevice(DeviceMeta):
     def __init__(self, device_url):
-        import uiautomator2 as u2
         d = u2.connect(device_url)
         self._d = d
 
@@ -29,13 +34,14 @@ class _AndroidDevice(DeviceMeta):
 
     def dump_hierarchy(self):
         return uidumplib.get_android_hierarchy(self._d)
-    
+
     def dump_hierarchy2(self):
         current = self._d.app_current()
         page_xml = self._d.dump_hierarchy(pretty=True)
-        page_json = uidumplib.android_hierarchy_to_json(page_xml.encode('utf-8'))
+        page_json = uidumplib.android_hierarchy_to_json(
+            page_xml.encode('utf-8'))
         return {
-            "xmlHierarchy": page_xml, 
+            "xmlHierarchy": page_xml,
             "jsonHierarchy": page_json,
             "activity": current['activity'],
             "packageName": current['package'],
@@ -49,43 +55,28 @@ class _AndroidDevice(DeviceMeta):
 
 class _AppleDevice(DeviceMeta):
     def __init__(self, device_url):
-        import wda
+        logger.info("ios connect: %s", device_url)
         c = wda.Client(device_url)
         self._client = c
-        self.__scale = c.session().scale
+        self.__scale = c.scale
 
     def screenshot(self):
         return self._client.screenshot(format='pillow')
 
     def dump_hierarchy(self):
         return uidumplib.get_ios_hierarchy(self._client, self.__scale)
-    
+
     def dump_hierarchy2(self):
         return {
-            "jsonHierarchy": uidumplib.get_ios_hierarchy(self._client, self.__scale),
-            "windowSize": self._client.session().window_size(),
+            "jsonHierarchy":
+            uidumplib.get_ios_hierarchy(self._client, self.__scale),
+            "windowSize":
+            self._client.window_size(),
         }
 
     @property
     def device(self):
-        return self._client.session()
-
-
-class _GameDevice(DeviceMeta):
-    def __init__(self, device_url):
-        import neco
-        d = neco.connect(device_url)
-        self._d = d
-
-    def screenshot(self):
-        return self._d.screenshot()
-
-    def dump_hierarchy(self):
-        return self._d.dump_hierarchy()
-
-    @property
-    def device(self):
-        return self._d
+        return self._client
 
 
 cached_devices = {}
@@ -102,7 +93,7 @@ def connect_device(platform, device_url):
     elif platform == 'ios':
         d = _AppleDevice(device_url)
     else:
-        d = _GameDevice(device_url or "localhost")
+        raise ValueError("Unknown platform", platform)
 
     cached_devices[device_id] = d
     return device_id

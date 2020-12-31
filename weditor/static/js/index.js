@@ -689,24 +689,6 @@ window.vm = new Vue({
           } else {
             callback(null, [])
           }
-          // switch (prefix) {
-          //   case ".":
-          //     console.log(line, /\w+\.xpath\([^)]+\)\./.test(line))
-          //     if (){
-          //       console.log("callback click")
-
-          //     }
-          //     break;
-          //   case "d":
-
-          //     break;
-          //   default:
-
-          // }
-          // if (prefix === ".") {
-          // } else if (prefix === "d") {
-          // } else {
-          // }
         }
       }
 
