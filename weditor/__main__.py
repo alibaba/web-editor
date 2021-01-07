@@ -145,7 +145,7 @@ def cmd_quit(port=17310):
             logger.warning("Pidfile: %s not exist", PID_FILEPATH)
             return
         
-        with open(PIDFILEPATH, "r") as f:
+        with open(PID_FILEPATH, "r") as f:
             pid = int(f.read())
             if os.name == "nt": # windows
                 subprocess.call(f"taskkill /PID {pid} /T /F") # /F: 强制 /T: 包含子进程
