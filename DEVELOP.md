@@ -1,16 +1,16 @@
 ## Doc for Developers
 ```bash
 # clone
-git clone https://github.com/openatx/weditor
+git clone https://github.com/vonhacht/web-editor
 pip install -e weditor
 ```
 
-`-e`这个选项可以将weditor目录下的代码直接关联到python的`site-packages`中。
+Where the `-e` option is for installing web-editor in `site-packages`
 
 
-修改完后，直接运行`python -m weditor`调试
+When done editing，run `python -m weditor`
 
-## 网页的基本布局
+## The default layout of the site
 ```
 ----------------------------
 NAV
@@ -19,7 +19,7 @@ Screen | Properties | Tree
 ----------------------------
 ```
 
-The following code is written in pug(rename from jade)
+The following code is written in pug (renamed from jade)
 
 ```pug
 body
@@ -53,13 +53,10 @@ body
 
 See example: https://codepen.io/codeskyblue/pen/mYdjGb
 
-## 发布到PYPI
-目前先打`git tag`, push到github之后，再通过travis发布到pypi上
-
 ## References
 - https://www.jstree.com/
 - fontawesome icons: https://fontawesome.com/v4.7.0/icons/
-- element-ui 组件：https://element.eleme.cn
+- element-ui component：https://element.eleme.cn
 - bootstrap v3: https://v3.bootcss.com/
 
 # LocalStorage
