@@ -57,8 +57,8 @@
           <button :disabled="loading || connecting" class="btn btn-default" v-on:click="dumpHierarchyWithScreen()">
             <i class="fa fa-refresh" :class='{"fa-spin": dumping}'></i> Dump Hierarchy
           </button>
+            <el-switch v-model="liveScreen" active-text="Realtime" inactive-text="Static">
           <template v-if="platform == 'Android'">
-            <el-switch v-model="liveScreen" active-text="实时" inactive-text="静态">
             </el-switch>
           </template>
         </form>
@@ -66,11 +66,11 @@
           <!-- <li><a href="#">Link</a></li> -->
           <li class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-              aria-expanded="false">相关文档 <span class="caret"></span></a>
+              aria-expanded="false">Related documents<span class="caret"></span></a>
             <ul class="dropdown-menu">
               <li><a target="_blank" href="https://github.com/openatx/weditor">openatx/weditor</a></li>
               <li role="separator" class="divider"></li>
-              <li><a target="_blank" href="https://github.com/openatx/weditor">uiautomator2快速参考</a></li>
+              <li><a target="_blank" href="https://github.com/openatx/weditor">uiautomator2 quick reference</a></li>
               <li role="separator" class="divider"></li>
               <li><a target="_blank" href="https://github.com/openatx/uiautomator2">openatx/uiautomator2</a></li>
               <li><a target="_blank" href="https://github.com/openatx/facebook-wda">openatx/facebook-wda</a></li>
