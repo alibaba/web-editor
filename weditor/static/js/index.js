@@ -69,7 +69,7 @@ window.vm = new Vue({
         case "iOS":
           this.deviceList = [{
             value: "http://localhost:8100",
-            label: "本地设备",
+            label: "localhost",
           }]
           break;
       }
@@ -259,7 +259,7 @@ window.vm = new Vue({
         })
     },
     initPythonWebSocket() {
-      // 初始化变量
+      // Initialize variables
       this.pyshell.running = false
       this.pyshell.restarting = false
 
@@ -271,9 +271,9 @@ window.vm = new Vue({
       }
       ws.onmessage = (message) => {
         const data = JSON.parse(message.data)
-        // 用蓝色的breakpoint标记已经运行过的代码
-        // 用另外的breakpoint标记当前运行中的代码
-        // 代码行号:lineno 从0开始
+        // Use blue breakpoint, mark code that have been executed
+        // Use another breakpoint, mark current code
+        // Code number: lineno From 0, Start
         switch (data.method) {
           case "gotoLine":
             let lineNumber = data.value + this.pyshell.lineno.offset;
@@ -281,9 +281,9 @@ window.vm = new Vue({
             this.pyshell.lineno.current = lineNumber
             this.editor.session.setBreakpoint(lineNumber)
 
-            // 下面这两行注释掉，因为会影响 "运行当前行" 功能中的自动跳到下一行的功能
-            //this.editor.selection.moveTo(lineNumber, 0) // 移动光标
-            //this.editor.scrollToLine(lineNumber) // 屏幕滚动到当前行
+            // Comment two following rows，will affect "run selected row" Jump automatically to next function => Linefunction
+            //this.editor.selection.moveTo(lineNumber, 0) // Move cursor
+            //this.editor.scrollToLine(lineNumber) // Screen scroll to row
             break;
           case "resetContent":
             this.editor.setValue(data.value)
@@ -302,8 +302,8 @@ window.vm = new Vue({
             this.pyshell.running = false
             this.resetEditor()
             this.$notify.success({
-              title: "重启内核",
-              message: "成功",
+              title: "Restart kernel",
+              message: "Success",
               duration: 800,
               offset: 100,
             })
@@ -344,7 +344,7 @@ window.vm = new Vue({
     },
     copyToClipboard(text) {
       copyToClipboard(text)
-      this.$message.success('复制成功');
+      this.$message.success('Copy sucessful');
     },
     getAttrCount(collectionKey, key) {
       // eg: getAttrCount("resource-id", "tv_scan_text")
@@ -582,83 +582,83 @@ window.vm = new Vue({
       }]);
 
       const AndroidCompletions = [
-        { name: "应用安装", value: "d.app_install" },
-        { name: "启动应用", value: "d.app_start" },
-        { name: "清空应用", value: "d.app_clear" },
-        { name: "停止应用", value: "d.app_stop" },
-        { name: "当前应用", value: "d.app_current()" },
-        { name: "获取应用信息", value: "d.app_info" },
-        { name: "等待应用运行", value: "d.app_wait" },
-        { name: "窗口大小", value: "d.window_size()" },
-        { name: "截图", value: "d.screenshot()" },
-        { name: "推送文件", value: "d.push" },
-        { name: "执行shell命令", value: "d.shell" },
+        { name: "Application install", value: "d.app_install" },
+        { name: "Start application", value: "d.app_start" },
+        { name: "Empty application", value: "d.app_clear" },
+        { name: "Stop application", value: "d.app_stop" },
+        { name: "Current application", value: "d.app_current()" },
+        { name: "Get application information", value: "d.app_info" },
+        { name: "Wait for application", value: "d.app_wait" },
+        { name: "Windows size", value: "d.window_size()" },
+        { name: "Screen dump", value: "d.screenshot()" },
+        { name: "Push file", value: "d.push" },
+        { name: "Execute shell command", value: "d.shell" },
         { name: "shell: pwd", value: 'd.shell("pwd").output' },
         { name: "XPath", value: "d.xpath" },
-        { name: "XPath 点击", value: 'd.xpath("购买").click()' },
+        { name: "XPath click on", value: 'd.xpath("buy").click()' },
         { name: "WLAN IP", value: "d.wlan_ip" },
-        { name: "剪贴板设置", value: "d.clipboard = " },
-        { name: "剪贴板获取", value: "d.clipboard" },
-        { name: "上滑60%", value: 'd.swipe_ext("up", 0.6)' },
-        { name: "右滑60%", value: 'd.swipe_ext("right", 0.6)' },
-        { name: "显示信息", value: "d.info" },
-        { name: "最长等待时间", value: "d.implicitly_wait(20)" },
-        { name: "常用设置", value: "d.settings" },
-        { name: "服务最大空闲时间", value: "d.set_new_command_timeout" },
-        { name: "调试开关", value: "d.debug = True" },
-        { name: "坐标点击 x,y", value: "d.click" },
-        { name: "获取图层", value: "d.dump_hierarchy()" },
-        { name: "监控", value: "d.watcher" },
-        { name: "停止uiautomator", value: "d.uiautomator.stop()" },
-        { name: "视频录制", value: "d.screenrecord('output.mp4')" },
-        { name: "停止视频录制", value: "d.screenrecord.stop()" },
-        { name: "回到桌面", value: 'd.press("home")' },
-        { name: "返回", value: 'd.press("back")' },
-        { name: "等待activity", value: 'd.wait_activity("xxxx", timeout=10)' },
+        { name: "Settings for clipping", value: "d.clipboard = " },
+        { name: "To clipping", value: "d.clipboard" },
+        { name: "Swipe up 60%", value: 'd.swipe_ext("up", 0.6)' },
+        { name: "Swipe right 60%", value: 'd.swipe_ext("right", 0.6)' },
+        { name: "Show information", value: "d.info" },
+        { name: "Longest waiting-time", value: "d.implicitly_wait(20)" },
+        { name: "Regular settings", value: "d.settings" },
+        { name: "Max timeout for service", value: "d.set_new_command_timeout" },
+        { name: "Debug", value: "d.debug = True" },
+        { name: "Coordinate-click x,y", value: "d.click" },
+        { name: "Dump hierarchy", value: "d.dump_hierarchy()" },
+        { name: "Watch", value: "d.watcher" },
+        { name: "Stop uiautomator", value: "d.uiautomator.stop()" },
+        { name: "Video recording", value: "d.screenrecord('output.mp4')" },
+        { name: "Stop video recodring", value: "d.screenrecord.stop()" },
+        { name: "Back to home", value: 'd.press("home")' },
+        { name: "Back", value: 'd.press("back")' },
+        { name: "Wait for activity", value: 'd.wait_activity("xxxx", timeout=10)' },
         { name: "abc", value: 'd.wait_activity("xxxx", timeout=10)' }
       ]
 
       const iOSCompletions = [
-        { name: "状态信息", value: "d.status()" },
-        { name: "等待就绪", value: "d.wait_ready(timeout=300)" },
+        { name: "Status information", value: "d.status()" },
+        { name: "Wait for ready", value: "d.wait_ready(timeout=300)" },
         { name: "HOME", value: "d.home()" },
-        { name: "截图", value: "d.screenshot()" },
-        { name: "截图保存", value: "d.screenshot().save" },
-        { name: "截图+旋转+保存", value: 's.screenshot().transpose(Image.ROTATE_90).save("correct.png")' },
+        { name: "Screen dump", value: "d.screenshot()" },
+        { name: "Screen dump save", value: "d.screenshot().save" },
+        { name: "Screen dump+spin+save", value: 's.screenshot().transpose(Image.ROTATE_90).save("correct.png")' },
         { name: "Healthcheck", value: "d.healthcheck()" },
-        { name: "启动应用", value: "d.app_launch" },
-        { name: "启动应用设置", value: "d.app_launch('com.apple.Preferences')" },
-        { name: "当前应用", value: "d.app_current()" },
-        { name: "将应用放到前台", value: "d.app_activate" },
-        { name: "杀掉应用", value: "d.app_terminate" },
-        { name: "获取应用状态", value: "d.app_state" },
-        { name: "设置搜索等待时间", value: "d.implicitly_wait(30.0)" },
-        { name: "窗口UI大小", value: "d.window_size()" },
-        { name: "点击", value: "d.click" },
-        { name: "双击", value: "d.double_tap" },
-        { name: "滑动", value: "d.swipe" },
-        { name: "从中央滑动到底部", value: "d.swipe(0.5, 0.5, 0.5, 0.99)" },
-        { name: "长按1s", value: "d.tap_hold(x, y, 1.0)" },
-        { name: "输入", value: "d.send_keys" },
-        { name: "弹窗点击", value: "d.alert.click(按钮名)" },
-        { name: "弹窗按钮", value: "d.alert.buttons()" },
-        { name: "等待弹窗", value: "d.alert.wait(timeout=20.0)" },
-        { name: "弹窗是否存在", value: "d.alert.exists" },
+        { name: "Start application", value: "d.app_launch" },
+        { name: "Start program settings", value: "d.app_launch('com.apple.Preferences')" },
+        { name: "Current application", value: "d.app_current()" },
+        { name: "Move application to front", value: "d.app_activate" },
+        { name: "Kill application", value: "d.app_terminate" },
+        { name: "Get application status", value: "d.app_state" },
+        { name: "Set waittime for search", value: "d.implicitly_wait(30.0)" },
+        { name: "Window UI size", value: "d.window_size()" },
+        { name: "Click on", value: "d.click" },
+        { name: "Double click", value: "d.double_tap" },
+        { name: "Slide", value: "d.swipe" },
+        { name: "Swipe from middle to bottom", value: "d.swipe(0.5, 0.5, 0.5, 0.99)" },
+        { name: "Press 1s", value: "d.tap_hold(x, y, 1.0)" },
+        { name: "Get in", value: "d.send_keys" },
+        { name: "Pop-up click", value: "d.alert.click(按钮名)" },
+        { name: "Pop-up button", value: "d.alert.buttons()" },
+        { name: "Wait on pop-up", value: "d.alert.wait(timeout=20.0)" },
+        { name: "Does pop-up exist", value: "d.alert.exists" },
       ]
 
       const xpathCompletions = [
-        { name: "点击", value: "click()" },
-        { name: "存在时点击", value: "click_exists()" },
-        { name: "等待元素出现", value: "wait()" },
-        { name: "等待元素消失", value: "wait_gone()" },
-        { name: "是否存在", value: "exists" },
-        { name: "控件截图", value: "screenshot()" },
-        { name: "控件上滑", value: 'swipe("up")' },
-        { name: "获取控件中心点坐标", value: "center()" },
-        { name: "信息", value: "info" },
-        { name: "获取Element", value: "get()" },
-        { name: "返回所有匹配", value: "all()" },
-        { name: "获取XpathElement", value: "get(timeout=10)" },
+        { name: "Click", value: "click()" },
+        { name: "Click if found", value: "click_exists()" },
+        { name: "Wait for element to show", value: "wait()" },
+        { name: "Wait for element to disappear", value: "wait_gone()" },
+        { name: "Does it exist", value: "exists" },
+        { name: "Check screen-dump", value: "screenshot()" },
+        { name: "Check swipe-up", value: 'swipe("up")' },
+        { name: "Get coordinate from center", value: "center()" },
+        { name: "Information", value: "info" },
+        { name: "Get element", value: "get()" },
+        { name: "Return all matching", value: "all()" },
+        { name: "Get XpathElement", value: "get(timeout=10)" },
       ]
 
       const isAndroid = (this.platform === "Android")
@@ -680,10 +680,10 @@ window.vm = new Vue({
           } else if (prefix === "d") {
             callback(null, (isAndroid ? AndroidCompletions : iOSCompletions).map(v => {
               return {
-                name: v.name, // 显示的名字,没什么乱用
-                value: v.value, // 插入的值
-                score: 1, // 分数越大，排名越靠前
-                meta: v.name, //描述,
+                name: v.name, // Show name,no movement
+                value: v.value, // Insert value
+                score: 1, // The higher points，the higher ranking
+                meta: v.name, //Description,
               }
             }))
           } else {
@@ -705,18 +705,18 @@ window.vm = new Vue({
       const editor = this.editor;
       let code = editor.getSelectedText()
       if (!code) {
-        // 如果没有选中，使用光标所在行代码
+        // If not choosen，use code-line where marker is placed
         const pos = editor.getCursorPosition()
         let row = pos.row;
-        this.pyshell.lineno.offset = row // 修正服务端的行号
+        this.pyshell.lineno.offset = row // Corect rownumber on server
         code = editor.getSession().getLine(row).trimLeft();
 
-        // 运行完后调转到下一行，方便连续点击
+        // Transfer to next after running一Row.click continuous
         editor.selection.moveTo(pos.row + 1, pos.column)
       } else {
         this.pyshell.lineno.offset = editor.getSelectionRange().start.row
       }
-      this.pyshell.lineno.current = this.pyshell.lineno.offset // 重置编辑器当前行号
+      this.pyshell.lineno.current = this.pyshell.lineno.offset // Reset line number for editor
       return this.runPythonWithConnect(code)
     },
     resizeScreen(img) {
@@ -1012,8 +1012,8 @@ window.vm = new Vue({
       this.pyshell.lineno.current = -1;
     },
     gotoCursorLine(lineno) {
-      this.editor.selection.moveTo(lineno, 0) // 移动光标
-      this.editor.scrollToLine(lineno) // 屏幕滚动到当前行
+      this.editor.selection.moveTo(lineno, 0) // Move cursor
+      this.editor.scrollToLine(lineno) // Screen scroll to selected row
     },
     setLineGoThrough(lineno) {
       if (lineno >= 0) {

@@ -27,7 +27,7 @@
           <span class="icon-bar"></span>
         </button>
         <a class="navbar-brand" href="#">
-          ATX <strong>WEditor</strong>
+          KJ <strong>WEditor</strong>
           <small v-text="version"></small>
         </a>
       </div>
@@ -148,16 +148,16 @@
                 <tr>
                   <td>
                     <span @click="showCursorPercent = !showCursorPercent" class="cursor-pointer">
-                      坐标
+                      Coordinate
                       <i :class="{'inactive': !showCursorPercent}">%</i>
                       <i :class="{'inactive': showCursorPercent}">px</i>
                     </span>
                   </td>
                   <td>
-                    <span title="双击复制" @dblclick="copyToClipboard('('+cursorValue.x+', '+cursorValue.y+')')">
+                    <span title="Double click for copy" @dblclick="copyToClipboard('('+cursorValue.x+', '+cursorValue.y+')')">
                       ({{!cursorValue.x}}, {{!cursorValue.y}})
                     </span>
-                    <a href="#" @click="doPositionTap(cursorValue.x, cursorValue.y)">点击</a>
+                    <a href="#" @click="doPositionTap(cursorValue.x, cursorValue.y)">Click</a>
                   </td>
                 </tr>
               </template>
@@ -167,7 +167,7 @@
                   <td>
                     <i v-if="platform == 'iOS'">XCUIElementType</i><span v-text="elem._type"></span>
                     <small v-if="platform == 'iOS'" style="cursor: pointer; float: right;"
-                      @click="copyToClipboard('XCUIElementType' + elem._type)">复制</small>
+                      @click="copyToClipboard('XCUIElementType' + elem._type)">Copy</small>
                   </td>
                 </tr>
                 <tr v-for="key in filterAttributeKeys(elem)" :key="key">
@@ -183,16 +183,16 @@
             <tfoot></tfoot>
           </table>
           <h5>
-            代码
+            Code
           </h5>
           <!-- c9-ide -->
           <input type="text" v-model="generatedCode" class="form-control input-sm">
           <div class="checkbox">
             <label>
-              <input v-model="autoCopy" type="checkbox"> 自动复制代码
+              <input v-model="autoCopy" type="checkbox"> Copy code automatically
             </label>
             <label>
-              <input v-model="useXPathOnly" type="checkbox"> 强制使用XPath
+              <input v-model="useXPathOnly" type="checkbox"> Needed use XPath
             </label>
           </div>
         </div>
@@ -204,10 +204,10 @@
             <span class="glyphicon glyphicon-music"></span> Coding
             <span class="pull-right coding-commands">
               <el-button @click="initPythonWebSocket" size="mini" style="color: red;" v-if="!pyshell.wsOpen">
-                <i class="fa fa-unlink"></i> 点击重连
+                <i class="fa fa-unlink"></i> Click for reconnect
               </el-button>
               <el-tooltip :open-delay="500" content="Command+Shift+Enter" placement="top">
-                <el-button type="primary" size="mini" plain @click="codeRunSelected" :loading="codeRunning">单行或选中运行
+                <el-button type="primary" size="mini" plain @click="codeRunSelected" :loading="codeRunning">One row or run
                 </el-button>
               </el-tooltip>
               <el-tooltip :open-delay="500" content="Command+Enter" placement="top">
@@ -220,13 +220,13 @@
                   <i class="fa fa-stop"></i>
                 </el-button>
               </el-tooltip>
-              <el-button icon="el-icon-delete" type="warning" size="mini" plain @click="clearCode">重置代码
+              <el-button icon="el-icon-delete" type="warning" size="mini" plain @click="clearCode">Replace code
               </el-button>
               <el-button icon="el-icon-document-copy" type="primary" size="mini" plain
                 @click="copyToClipboard(editor.getValue())">
               </el-button>
               <el-button type="danger" size="mini" plain @click="restartKernel">
-                <i title="重启服务" class="fa fa-repeat"></i> <span v-if="pyshell.restarting"> ...</span>
+                <i title="Restart service" class="fa fa-repeat"></i> <span v-if="pyshell.restarting"> ...</span>
               </el-button>
             </span>
           </div>
@@ -312,7 +312,7 @@
 <script src="{{static_url('js/index.js')}}"></script>
 
 <!-- Baidu Analytics -->
-<script>
+<!--<script>
   var _hmt = _hmt || [];
   (function () {
     var hm = document.createElement("script");
@@ -320,6 +320,6 @@
     var s = document.getElementsByTagName("script")[0];
     s.parentNode.insertBefore(hm, s);
   })();
-</script>
+</script>-->
 
 </html>
