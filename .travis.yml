@@ -13,6 +13,6 @@ deploy:
   password:
     secure: OxlyiKC4bVITbRAOyBA9uqq2uWtXH+jEIx5/XpzdYktbMEq5fxTS8Hu9K3JORV9/w2enA6qlS/xtEXzBnSimn8lx6S+CoGsque+YrWE0kWu6nfsYKq5qkRf39pb/UNCF263p6FuIaUZghmOYlphjHvZFxiRaIyLr/OKv/RsuaDIyzpl/eDZdG/uI4pYjwipbt5E2im0QvMcs2hHpdMBrnmaf9HA+d4QrUrcPlc/ZfRA6gRTPREomXF04g6bh9Jei3QGGkrxbdSO/bcb43dXPhQLROtef3OVq5yM9KOx7DPk3XmSDwdNb4w05nWRgNFQZTkD1xNkNS5A4KBmMWXuH9edPwiblbP5ZoU9h1n9j+zSjZkeGRBwzZgO81DJCJSa2FKmnjqEgp3UfLVehZ3+rudu5NbKftnJLjjwgda/SV3AdRjh2iqYPb8TQepWwZvHTAXEpJ7BMSDzpRlKrGPNVPwkg5c1mCNuWwXGn0a8MoPT3izHJmoqD4MF5bleV3ZDW8Bpi8e4ROMIrycUGVQN2D39k5B4qPrPy+JA83ZvjV4eLDrmcv33ATK/lZb0oES+/IdLO2gbPb8N/48xV4voFVBSbxV+0tnR2Buynw2ApjTWBZOJ9Iv9rykgZCbK5nWlqDQwRArQVRtkrvC06O+OklDOxla5T4EvqJSGN2ZqQZUA=
   distributions: sdist bdist_wheel
-  repo: alibaba/web-editor
+  repo: vonhacht/web-editor
   on:
     tags: true
