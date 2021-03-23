@@ -38,7 +38,7 @@ from tornado.log import enable_pretty_logging
 from .web.handlers.page import (
     BaseHandler, DeviceConnectHandler,
     DeviceHierarchyHandler, DeviceHierarchyHandlerV2, DeviceScreenshotHandler,
-    DeviceWidgetListHandler, MainHandler, VersionHandler, WidgetPreviewHandler)
+    DeviceWidgetListHandler, MainHandler, MainHandlerV2, VersionHandler, WidgetPreviewHandler)
 from .web.handlers.proxy import StaticProxyHandler
 from .web.handlers.shell import PythonShellHandler
 from .web.utils import current_ip, tostr
@@ -89,6 +89,7 @@ def make_app(settings={}):
     application = tornado.web.Application(
         [
             (r"/", MainHandler),
+            (r"/2", MainHandlerV2),
             (r"/api/v1/version", VersionHandler),
             (r"/api/v1/connect", DeviceConnectHandler),
             (r"/api/v1/crop", CropHandler),

@@ -51,6 +51,11 @@ class MainHandler(BaseHandler):
         self.render("index.html")
 
 
+class MainHandlerV2(BaseHandler):
+    def get(self):
+        self.render("index2.html")
+
+
 class DeviceConnectHandler(BaseHandler):
     def post(self):
         platform = self.get_argument("platform").lower()
