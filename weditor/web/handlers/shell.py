@@ -1,13 +1,15 @@
 # coding: utf-8
-# 
+#
 import asyncio
+import atexit
 import json
 import logging
 import os
 import re
-import sys
 import signal
 import subprocess
+import sys
+import tempfile
 import threading
 from typing import Any
 
@@ -73,6 +75,20 @@ class PosixAsyncSubprocess(Subprocess):
 
 
 class PythonShellHandler(tornado.websocket.WebSocketHandler):
+    def initialize(self):
+        self._tmpd = tempfile.TemporaryDirectory(suffix='-weditor')
+        atexit.register(self._tmpd.cleanup)
+
+    def on_close(self):
+        logger.warning("websocket closed, cleanup")
+        self._tmpd.cleanup()
+        atexit.unregister(self._tmpd.cleanup)
+        IOLoop.current().add_callback(self.kill_process)
+
+    @property
+    def _tmpdir(self) -> str:
+        return self._tmpd.name
+
     async def prepare(self):
         """
         Refs:
@@ -86,9 +102,10 @@ class PythonShellHandler(tornado.websocket.WebSocketHandler):
             [sys.executable, "-u",
              os.path.join(ROOT_DIR, "../ipyshell-console.py")],
             env=env,
+            cwd=self._tmpdir,
             stdin=Subprocess.STREAM,
             stdout=Subprocess.STREAM,
-            stderr=subprocess.STDOUT)
+            stderr=subprocess.STDOUT) # yapf: disable
         # self.__process = Subprocess([sys.executable, "-u", os.path.join(ROOT_DIR, "ipyshell.py")],
         #     # bufsize=1, #universal_newlines=True,
         #     stdin=Subprocess.STREAM,
@@ -201,7 +218,3 @@ class PythonShellHandler(tornado.websocket.WebSocketHandler):
             self.write2({"method": "restarted"})
         else:
             logger.warning("Unknown received message: %s", data)
-
-    def on_close(self):
-        logger.warning("websocket closed")
-        IOLoop.current().add_callback(self.kill_process)
