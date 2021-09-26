@@ -27,6 +27,8 @@ class DeviceMeta(metaclass=abc.ABCMeta):
 class _AndroidDevice(DeviceMeta):
     def __init__(self, device_url):
         d = u2.connect(device_url)
+        # 登陆界面无法截图，就先返回空图片
+        d.settings["fallback_to_blank_screenshot"] = True
         self._d = d
 
     def screenshot(self):
@@ -56,7 +58,10 @@ class _AndroidDevice(DeviceMeta):
 class _AppleDevice(DeviceMeta):
     def __init__(self, device_url):
         logger.info("ios connect: %s", device_url)
-        c = wda.Client(device_url)
+        if device_url == "":
+            c = wda.USBClient()
+        else:
+            c = wda.Client(device_url)
         self._client = c
         self.__scale = c.scale
 

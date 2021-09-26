@@ -59,14 +59,14 @@ class DeviceConnectHandler(BaseHandler):
         try:
             id = connect_device(platform, device_url)
         except RuntimeError as e:
-            self.set_status(410)  # 410 Gone
+            self.set_status(500)
             self.write({
                 "success": False,
                 "description": str(e),
             })
         except Exception as e:
             logger.warning("device connect error: %s", e)
-            self.set_status(410)  # 410 Gone
+            self.set_status(500)
             self.write({
                 "success": False,
                 "description": traceback.format_exc(),
@@ -215,9 +215,9 @@ class DeviceScreenshotHandler(BaseHandler):
             self.write(response)
         except EnvironmentError as e:
             traceback.print_exc()
-            self.set_status(430, "Environment Error")
+            self.set_status(500, "Environment Error")
             self.write({"description": str(e)})
         except RuntimeError as e:
-            self.set_status(410)  # Gone
-            self.write({"description": traceback.print_exc()})
+            self.set_status(500)  # Gone
+            self.write({"description": traceback.format_exc()})
 

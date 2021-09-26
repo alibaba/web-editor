@@ -68,7 +68,7 @@ window.vm = new Vue({
       switch (newval) {
         case "iOS":
           this.deviceList = [{
-            value: "http://localhost:8100",
+            value: "",
             label: "本地设备",
           }]
           break;
@@ -179,7 +179,7 @@ window.vm = new Vue({
         return '';
       }
       if (this.platform == 'iOS' && this.serial == '') {
-        return 'http://localhost:8100';
+        return '';
       }
       if (this.platform == 'Neco') {
         var ipex = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b:?\d*/;
