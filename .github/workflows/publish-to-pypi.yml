@@ -19,7 +19,6 @@ jobs:
     - name: Build targz and wheel
       run: |
         python3 setup.py sdist
-        python3 build_wheel.py
     - name: Publish distribution 📦 to PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
