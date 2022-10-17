@@ -66,7 +66,11 @@ class _AppleDevice(DeviceMeta):
         self.__scale = c.scale
 
     def screenshot(self):
-        return self._client.screenshot(format='pillow')
+        try:
+            return self._client.screenshot(format='pillow')
+        except:
+            import tidevice
+            return tidevice.Device().screenshot()
 
     def dump_hierarchy(self):
         return uidumplib.get_ios_hierarchy(self._client, self.__scale)
