@@ -22,7 +22,7 @@ pathjoin = os.path.join
 class BaseHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
         self.set_header("Access-Control-Allow-Origin", "*")
-        self.set_header("Access-Control-Allow-Headers", "x-requested-with")
+        self.set_header("Access-Control-Allow-Headers", "*")
         self.set_header("Access-Control-Allow-Credentials",
                         "true")  # allow cookie
         self.set_header('Access-Control-Allow-Methods',
@@ -221,3 +221,35 @@ class DeviceScreenshotHandler(BaseHandler):
             self.set_status(500)  # Gone
             self.write({"description": traceback.format_exc()})
 
+class DeviceSizeHandler(BaseHandler):
+    def post(self):
+        serial = self.get_argument("serial")
+        logger.info("Serial: %s", serial)
+        d = get_device(serial)
+        w, h = d.device.window_size()
+        self.write({"width": w, "height": h})
+
+class DeviceTouchHandler(BaseHandler):
+    def post(self):
+        serial = self.get_argument("serial")
+        action = self.get_argument("action")
+        x = int(self.get_argument("x"))
+        y = int(self.get_argument("y"))
+        logger.info("Serial: %s", serial)
+        d = get_device(serial)
+        if action == 'down':
+            d.device.touch.down(x, y)
+        elif action == 'move':
+            d.device.touch.move(x, y)
+        else:
+            d.device.touch.up(x, y)
+        self.write({"success": True})
+
+class DevicePressHandler(BaseHandler):
+    def post(self):
+        serial = self.get_argument("serial")
+        key = self.get_argument("key")
+        logger.info("Serial: %s", serial)
+        d = get_device(serial)
+        ret = d.device.press(key)
+        self.write({"ret": ret})
