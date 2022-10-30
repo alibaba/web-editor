@@ -30,7 +30,7 @@ window.vm = new Vue({
     loading: false,
     dumping: false,
     screenWebSocket: null,
-    screenWebSocketUrl: null,
+    miniCapUrl: null,
     liveScreen: false,
     canvas: {
       bg: null,
@@ -376,7 +376,7 @@ window.vm = new Vue({
         .then((ret) => {
           console.log("deviceId", ret.deviceId)
           this.deviceId = ret.deviceId
-          this.screenWebSocketUrl = ret.screenWebSocketUrl
+          this.miniCapUrl = ret.miniCapUrl
           this.runPython(this.generatePreloadCode())
         })
         .fail((ret) => {
@@ -877,7 +877,7 @@ window.vm = new Vue({
       var BLANK_IMG =
         'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
       var protocol = location.protocol == "http:" ? "ws://" : "wss://"
-      var ws = new WebSocket(this.screenWebSocketUrl);
+      var ws = new WebSocket(this.miniCapUrl);
       var canvas = document.getElementById('bgCanvas')
       var ctx = canvas.getContext('2d');
       var lastScreenSize = {

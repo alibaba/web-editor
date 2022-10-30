@@ -12,6 +12,8 @@ from logzero import logger
 from PIL import Image
 from tornado.escape import json_decode
 
+from ..utils import current_ip
+
 from ..device import connect_device, get_device
 from ..version import __version__
 
@@ -57,7 +59,17 @@ class DeviceConnectHandler(BaseHandler):
         device_url = self.get_argument("deviceUrl")
 
         try:
-            id = connect_device(platform, device_url)
+            id = platform + ":" + device_url
+            d = get_device(id)
+            ret = {
+                "deviceId": id,
+                'success': True,
+            }
+            if platform == "android":
+                ret['deviceAddress'] = d.device.address.replace("http://", "ws://") # yapf: disable
+                ret['miniCapUrl'] = "ws://" + self.request.host + "/ws/v1/minicap?deviceId=" + id
+                ret['miniTouchUrl'] = "ws://" + self.request.host + "/ws/v1/minitouch?deviceId=" + id
+            self.write(ret)
         except RuntimeError as e:
             self.set_status(500)
             self.write({
@@ -71,16 +83,6 @@ class DeviceConnectHandler(BaseHandler):
                 "success": False,
                 "description": traceback.format_exc(),
             })
-        else:
-            ret = {
-                "deviceId": id,
-                'success': True,
-            }
-            if platform == "android":
-                ws_addr = get_device(id).device.address.replace("http://", "ws://") # yapf: disable
-                ret['screenWebSocketUrl'] = ws_addr + "/minicap"
-            self.write(ret)
-
 
 class DeviceHierarchyHandler(BaseHandler):
     def get(self, device_id):
@@ -241,8 +243,10 @@ class DeviceTouchHandler(BaseHandler):
             d.device.touch.down(x, y)
         elif action == 'move':
             d.device.touch.move(x, y)
-        else:
+        elif action == 'up':
             d.device.touch.up(x, y)
+        else:
+            d.device.click(x, y)
         self.write({"success": True})
 
 class DevicePressHandler(BaseHandler):

@@ -79,6 +79,9 @@ class PythonShellHandler(tornado.websocket.WebSocketHandler):
         self._tmpd = tempfile.TemporaryDirectory(suffix='-weditor')
         atexit.register(self._tmpd.cleanup)
 
+    def check_origin(self, origin: str) -> bool:
+        return True
+
     def on_close(self):
         logger.warning("websocket closed, cleanup")
         self._tmpd.cleanup()

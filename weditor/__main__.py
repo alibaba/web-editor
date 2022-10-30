@@ -35,6 +35,8 @@ from tornado.concurrent import run_on_executor
 from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
 
+from weditor.web.handlers.mini import MiniCapHandler, MiniTouchHandler
+
 from .web.handlers.page import (
     BaseHandler, DeviceConnectHandler,
     DeviceHierarchyHandler, DeviceHierarchyHandlerV2, DeviceScreenshotHandler,
@@ -114,6 +116,8 @@ def make_app(settings={}):
             (r"/(cdn.jsdelivr.net/.*)", StaticProxyHandler),
             # (r"/ws/v1/build", BuildWSHandler),
             (r"/ws/v1/python", PythonShellHandler),
+            (r"/ws/v1/minicap", MiniCapHandler),
+            (r"/ws/v1/minitouch", MiniTouchHandler),
             (r"/quit", QuitHandler),
         ],
         **settings)
