@@ -14,28 +14,39 @@ class BaseHandler(WebSocketHandler):
         return True
 
 class ClientHandler(object):
-    handlers: list[BaseHandler] = []
+    conn = None
+    handlers: list[BaseHandler] = None
+    strs = None
     
     def __init__(self, id: str, name: str) -> None:
+        self.handlers = []
+        self.strs = {}
         self.id = id + "/" + name
         d = get_device(id)
         ws_addr = d.device.address.replace("http://", "ws://") # yapf: disable
         url = ws_addr + "/" + name
-        print(url)
-        self.conn = websocket_connect(url, callback=self.on_open, on_message_callback=self.on_message, connect_timeout=10)
+        
+        websocket_connect(url, callback=self.on_open, on_message_callback=self.on_message, connect_timeout=10)
         
         cached_devices[self.id] = self
     
-    def on_open(self, conn: Future):
+    def on_open(self, future: Future = None):
         logger.info("client open")
+        try:
+            self.conn = future.result()
+        except:
+            self.on_close()
     
     def on_message(self, message):
         if message is None:
             self.on_close()
         else:
-            logger.debug("client message: %d", len(message))
+            # logger.debug("client message: %s", message)
             for handler in self.handlers:
-                handler.write_message(message, binary=True)
+                handler.write_message(message, isinstance(message, bytes))
+            if isinstance(message, str):
+                key, val = message.split(" ", maxsplit=1)
+                self.strs[key] = val
     
     def on_close(self):
         logger.info("client close")
@@ -48,12 +59,14 @@ class ClientHandler(object):
     
     def add_handler(self, handler: BaseHandler):
         self.handlers.append(handler)
+        for key, val in self.strs.items():
+            handler.write_message(key + " " + val)
     
     def del_handler(self, handler: BaseHandler):
         self.handlers.remove(handler)
     
     def write_message(self, message):
-        self.conn.write_message(message, binary=True)
+        return self.conn.write_message(message, isinstance(message, bytes))
 
 def get_client(id, name):
     key = id + "/" + name
@@ -86,8 +99,9 @@ class MiniTouchHandler(BaseHandler):
     d = None
     def open(self):
         self.id = self.get_query_argument("deviceId")
-        self.d = get_client(self.id, 'minitouch')
+        self.d = get_client(self.id, "minitouch")
         self.d.add_handler(self)
+        
         logger.info("MiniTouch opened: %s", id)
 
     def on_message(self, message):
