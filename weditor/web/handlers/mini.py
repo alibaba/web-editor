@@ -44,7 +44,7 @@ class ClientHandler(object):
             # logger.debug("client message: %s", message)
             for handler in self.handlers:
                 handler.write_message(message, isinstance(message, bytes))
-            if isinstance(message, str):
+            if isinstance(message, str) and message.__contains__(" "):
                 key, val = message.split(" ", maxsplit=1)
                 self.strs[key] = val
     
@@ -66,7 +66,8 @@ class ClientHandler(object):
         self.handlers.remove(handler)
     
     def write_message(self, message):
-        return self.conn.write_message(message, isinstance(message, bytes))
+        if self.conn is not None:
+            return self.conn.write_message(message, isinstance(message, bytes))
 
 def get_client(id, name):
     key = id + "/" + name

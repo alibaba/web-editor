@@ -255,5 +255,5 @@ class DevicePressHandler(BaseHandler):
         key = self.get_argument("key")
         logger.info("Serial: %s", serial)
         d = get_device(serial)
-        ret = d.device.press(key)
+        ret = d.device.keyevent(key)
         self.write({"ret": ret})
