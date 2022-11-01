@@ -182,6 +182,8 @@ def run_web(debug=False, port=17310, open_browser=False, force_quit=False):
     tornado.ioloop.IOLoop.instance().start()
     # tornado.ioloop.IOLoop.instance().add_callback(consume_queue)
 
+    stop_device()
+    
     if os.path.exists(PID_FILEPATH):
         os.unlink(PID_FILEPATH)
 
@@ -244,7 +246,6 @@ def main():
 
     open_browser = not args.quiet and not args.debug
     run_web(args.debug, args.port, open_browser, args.force_quit)
-    stop_device()
 
 if __name__ == '__main__':
     main()
