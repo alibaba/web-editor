@@ -1,8 +1,6 @@
 # coding: utf-8
 #
 from asyncio import Future
-from subprocess import call
-from typing import Callable, Optional, Union
 from logzero import logger
 from weditor.web.device import get_device
 from tornado.websocket import websocket_connect, WebSocketHandler

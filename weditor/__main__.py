@@ -4,35 +4,19 @@
 from __future__ import absolute_import, print_function
 
 import argparse
-import base64
-import hashlib
-import io
-import json
 import os
-import platform
-import queue
 import signal
-import socket
 import subprocess
 import sys
 import time
-import traceback
-import uuid
 import webbrowser
-# `pip install futures` for python2
-from concurrent.futures import ThreadPoolExecutor
-from subprocess import PIPE
 
 import requests
-import six
 import tornado.escape
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
 from logzero import logger
-from tornado import gen
-from tornado.concurrent import run_on_executor
-from tornado.escape import json_encode
 from tornado.log import enable_pretty_logging
 
 from weditor.web.handlers.mini import MiniCapHandler, MiniTouchHandler
