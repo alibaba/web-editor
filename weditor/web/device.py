@@ -114,3 +114,8 @@ def get_device(id):
         platform, uri = id.split(":", maxsplit=1)
         connect_device(platform, uri)
     return cached_devices[id]
+
+def stop_device():
+    for d in cached_devices.values():
+        d.device.reset_uiautomator('Stop Device')
+    cached_devices = None

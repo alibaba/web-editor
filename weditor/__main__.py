@@ -18,6 +18,7 @@ import tornado.web
 import tornado.websocket
 from logzero import logger
 from tornado.log import enable_pretty_logging
+from weditor.web.device import stop_device
 
 from weditor.web.handlers.mini import MiniCapHandler, MiniTouchHandler
 
@@ -243,7 +244,7 @@ def main():
 
     open_browser = not args.quiet and not args.debug
     run_web(args.debug, args.port, open_browser, args.force_quit)
-
+    stop_device()
 
 if __name__ == '__main__':
     main()
