@@ -8,15 +8,15 @@ from tornado.websocket import websocket_connect, WebSocketHandler
 cached_devices = {}
 
 class BaseHandler(WebSocketHandler):
-    def check_origin(self, origin: str) -> bool:
+    def check_origin(self, origin: str):
         return True
 
 class ClientHandler(object):
     conn = None
-    handlers: list[BaseHandler] = None
+    handlers = None
     strs = None
     
-    def __init__(self, id: str, name: str) -> None:
+    def __init__(self, id: str, name: str):
         self.handlers = []
         self.strs = {}
         self.id = id + "/" + name
