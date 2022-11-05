@@ -90,7 +90,6 @@ class _AppleDevice(DeviceMeta):
 
 cached_devices = {}
 
-
 def connect_device(platform, device_url):
     """
     Returns:
@@ -118,4 +117,3 @@ def get_device(id):
 def stop_device():
     for d in cached_devices.values():
         d.device.reset_uiautomator('Stop Device')
-    cached_devices = None
