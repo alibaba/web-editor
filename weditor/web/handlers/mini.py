@@ -15,11 +15,12 @@ class ClientHandler(object):
     conn = None
     handlers = None
     strs = None
-    bmsg = None
+    bins = None
     
     def __init__(self, id: str, name: str):
         self.handlers = []
         self.strs = {}
+        self.bins = []
         self.id = id + "/" + name
         d = get_device(id)
         ws_addr = d.device.address.replace("http://", "ws://") # yapf: disable
@@ -47,7 +48,9 @@ class ClientHandler(object):
                 key, val = message.split(" ", maxsplit=1)
                 self.strs[key] = val
             if isinstance(message, bytes):
-                self.bmsg = message;
+                self.bins.append(message)
+                while len(self.bins) > 10:
+                    del self.bins[0]
     
     def on_close(self):
         logger.info("client close")
@@ -59,11 +62,11 @@ class ClientHandler(object):
         del cached_devices[self.id]
     
     def add_handler(self, handler: BaseHandler):
-        if self.bmsg is not None:
-            handler.write_message(self.bmsg, True)
-        self.handlers.append(handler)
         for key, val in self.strs.items():
             handler.write_message(key + " " + val)
+        for msg in self.bins:
+            handler.write_message(msg, True)
+        self.handlers.append(handler)
     
     def del_handler(self, handler: BaseHandler):
         self.handlers.remove(handler)

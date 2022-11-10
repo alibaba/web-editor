@@ -26,10 +26,7 @@ class DeviceMeta(metaclass=abc.ABCMeta):
 
 class _AndroidDevice(DeviceMeta):
     def __init__(self, device_url):
-        d = u2.connect(device_url)
-        # 登陆界面无法截图，就先返回空图片
-        d.settings["fallback_to_blank_screenshot"] = True
-        self._d = d
+        self._d = u2.connect(device_url)
 
     def screenshot(self):
         return self._d.screenshot()
