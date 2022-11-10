@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="EditPlus®">
+  <meta name="Author" content="">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+  <title>下载列表</title>
+ </head>
+ <body>
+  <table>
+  	<tr>
+		<th>文件名</th>
+		<th>大小</th>
+		<th>最后修改时间</th>
+	</tr>
+	{% for f in files %}
+	<tr>
+		<td><a href="/downloads/{{f["name"]}}">{{f["name"]}}</a></td>
+		<td>{{f["size"]}}</td>
+		<td>{{f["time"]}}</td>
+	</tr>
+	{% end %}
+  </table>
+ </body>
+</html>

@@ -26,7 +26,7 @@ from .web.handlers.page import (
     BaseHandler, DeviceConnectHandler,
     DeviceHierarchyHandler, DeviceHierarchyHandlerV2, DeviceScreenshotHandler,
     DeviceWidgetListHandler, MainHandler, VersionHandler, WidgetPreviewHandler,
-    DeviceSizeHandler, DeviceTouchHandler, DevicePressHandler)
+    DeviceSizeHandler, DeviceTouchHandler, DevicePressHandler, ListHandler, DownloadHandler)
 from .web.handlers.proxy import StaticProxyHandler
 from .web.handlers.shell import PythonShellHandler
 from .web.utils import current_ip, tostr
@@ -77,6 +77,8 @@ def make_app(settings={}):
     application = tornado.web.Application(
         [
             (r"/", MainHandler),
+            (r"/downloads", ListHandler),
+            (r"/downloads/(.+)", DownloadHandler),
             (r"/api/v1/version", VersionHandler),
             (r"/api/v1/connect", DeviceConnectHandler),
             (r"/api/v1/size", DeviceSizeHandler),

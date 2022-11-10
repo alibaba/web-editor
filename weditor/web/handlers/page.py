@@ -6,7 +6,8 @@ import io
 import json
 import os
 import traceback
-
+import aiofiles
+import time
 import tornado
 from logzero import logger
 from PIL import Image
@@ -16,7 +17,6 @@ from ..utils import current_ip
 
 from ..device import connect_device, get_device
 from ..version import __version__
-
 
 pathjoin = os.path.join
 
@@ -257,3 +257,30 @@ class DevicePressHandler(BaseHandler):
         d = get_device(serial)
         ret = d.device.keyevent(key)
         self.write({"ret": ret})
+
+filepath = r"/home/pi/uploads"
+
+class ListHandler(BaseHandler):
+    def get(self):
+        files = []
+        for name in os.listdir(filepath):
+            st = os.stat(os.path.join(filepath, name))
+            t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(st.st_mtime))
+            files.append({"name": name, "size": st.st_size, "time": t})
+        self.render("list.html", files=files)
+
+class DownloadHandler(BaseHandler):
+    async def get(self, filename):
+        self.set_header('Content-Type', 'application/octet-stream')
+        fpath = os.path.join(filepath, filename)
+        st = os.stat(fpath)
+        self.set_header('Content-Length', st.st_size)
+        async with aiofiles.open(fpath, "rb") as f:
+            while True:
+                data = await f.read(16 * 1024)
+                if not data:
+                    break
+                self.write(data)
+                # flush method call is import,it makes low memory occupy,beacuse it send it out timely
+                self.flush()
+        self.finish()
