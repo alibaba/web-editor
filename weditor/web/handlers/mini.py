@@ -15,6 +15,7 @@ class ClientHandler(object):
     conn = None
     handlers = None
     strs = None
+    bmsg = None
     
     def __init__(self, id: str, name: str):
         self.handlers = []
@@ -32,6 +33,8 @@ class ClientHandler(object):
         logger.info("client open")
         try:
             self.conn = future.result()
+            if self.conn is not None and self.bmsg is not None:
+                self.conn.write_message(self.bmsg, True)
         except:
             self.on_close()
     
@@ -45,6 +48,8 @@ class ClientHandler(object):
             if isinstance(message, str) and message.__contains__(" "):
                 key, val = message.split(" ", maxsplit=1)
                 self.strs[key] = val
+            if isinstance(message, bytes):
+                self.bmsg = message;
     
     def on_close(self):
         logger.info("client close")
