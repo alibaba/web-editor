@@ -33,8 +33,6 @@ class ClientHandler(object):
         logger.info("client open")
         try:
             self.conn = future.result()
-            if self.conn is not None and self.bmsg is not None:
-                self.conn.write_message(self.bmsg, True)
         except:
             self.on_close()
     
@@ -61,6 +59,8 @@ class ClientHandler(object):
         del cached_devices[self.id]
     
     def add_handler(self, handler: BaseHandler):
+        if self.bmsg is not None:
+            handler.write_message(self.bmsg, True)
         self.handlers.append(handler)
         for key, val in self.strs.items():
             handler.write_message(key + " " + val)
