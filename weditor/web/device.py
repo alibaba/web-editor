@@ -11,7 +11,7 @@ from logzero import logger
 from PIL import Image
 
 from . import uidumplib
-
+from tornado.ioloop import PeriodicCallback, IOLoop
 
 class DeviceMeta(metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -27,12 +27,17 @@ class DeviceMeta(metaclass=abc.ABCMeta):
 
 
 class _AndroidDevice(DeviceMeta):
+    isScreenRecord = False
+    screenRecordTime = None
+    screenrecordTimeout = None
+    
     def __init__(self, device_url):
         self._d = u2.connect(device_url)
 
     def start_screenrecord(self, path):
         r = self._d.http.post("/screenrecord")
-        code = 0
+        logcat = 0
+        dmesg = 0
         if r.status_code == 200:
             t = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
             stdout = os.path.join(path, "logcat-" + t + ".log")
@@ -41,16 +46,34 @@ class _AndroidDevice(DeviceMeta):
             stdout = os.path.join(path, "dmesg-" + t + ".log")
             stderr = os.path.join(path, "dmesg-" + t + ".err")
             dmesg = os.system("daemon -rU --name dmesg --stdout " + stdout + " --stderr " + stderr + " -- adb shell 'echo \"while dmesg -c;do echo ;done\" | su'")
+            self.isScreenRecord = True
+            self.screenRecordTime = t
+            
+            def do_timeout():
+                self.stop_screenrecord(path)
+            
+            self.screenrecordTimeout = PeriodicCallback(do_timeout, 30 * 60 * 1000)
+            self.screenrecordTimeout.start()
+        
         return {"status": r.status_code == 200, "message": str(r.text).strip(), "logcat": logcat, "dmesg": dmesg}
 
     def stop_screenrecord(self, path):
+        if self.screenrecordTimeout is not None:
+            self.screenrecordTimeout.stop()
+        
         r = self._d.http.put("/screenrecord")
         if r.status_code == 200:
+            self.isScreenRecord = False
             videos = r.json()["videos"]
             if len(videos) > 0:
                 files = []
                 cmdargs = ["rm", "-f"]
-                t = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
+                
+                if self.isScreenRecord:
+                    t = self.screenRecordTime
+                else:
+                    t = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
+                
                 for f in videos:
                     name = "screenrecord-" + t + "-" + os.path.basename(f)
                     self._d.pull(f, os.path.join(path, name))
@@ -148,6 +171,7 @@ def get_device(id):
         connect_device(platform, uri)
     return cached_devices[id]
 
-def stop_device():
+def stop_device(path):
     for d in cached_devices.values():
+        d.stop_screenrecord(path)
         d.device.reset_uiautomator('Stop Device')

@@ -234,6 +234,21 @@ class DeviceScreenrecordHandler(BaseHandler):
             self.write(d.start_screenrecord(self.root))
         elif action == "stop":
             self.write(d.stop_screenrecord(self.root))
+        elif action == "status":
+            self.write({"status": True, "message": "OK", "result": d.isScreenRecord})
+        else:
+            self.set_status(404)
+            self.write("action " + action + " invalid")
+
+class FloatWindowHandler(BaseHandler):
+    def get(self, serial, action):
+        d = get_device(serial)
+        if action == "show":
+            d.device.show_float_window(True)
+            self.finish()
+        elif action == "hide":
+            d.device.show_float_window(False)
+            self.finish()
         else:
             self.set_status(404)
             self.write("action " + action + " invalid")
@@ -277,9 +292,7 @@ def formatsize(size: int):
     if size < 1024:
         return str(size)
     
-    logger.info("size = %d", size)
     i = math.floor(math.log(size, 1024))
-    logger.info("i = %d", i)
     unit = "BKMGT"
     return "{:.3f}".format(size / math.pow(1024, i)) + unit[i]
 

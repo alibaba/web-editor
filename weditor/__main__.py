@@ -26,7 +26,7 @@ from .web.handlers.page import (
     BaseHandler, DeviceConnectHandler,
     DeviceHierarchyHandler, DeviceHierarchyHandlerV2, DeviceScreenshotHandler,
     DeviceWidgetListHandler, MainHandler, VersionHandler, WidgetPreviewHandler,
-    DeviceSizeHandler, DeviceTouchHandler, DevicePressHandler, ListHandler, DeviceScreenrecordHandler)
+    DeviceSizeHandler, DeviceTouchHandler, DevicePressHandler, ListHandler, DeviceScreenrecordHandler, FloatWindowHandler)
 from .web.handlers.proxy import StaticProxyHandler
 from .web.handlers.shell import PythonShellHandler
 from .web.utils import current_ip, tostr
@@ -72,12 +72,15 @@ class CropHandler(BaseHandler):
         """ used for crop image """
         pass
 
+if os.name == "nt":
+    uploadPath = "D:\\code\\uploads"
+else:
+    uploadPath = os.path.expandvars("$HOME/uploads")
+
+if not os.path.isdir(uploadPath):
+    os.makedirs(uploadPath)
 
 def make_app(settings={}):
-    if os.name == "nt":
-        uploadPath = "D:\\code\\uploads"
-    else:
-        uploadPath = "/home/pi/uploads"
     application = tornado.web.Application(
         [
             (r"/", MainHandler),
@@ -91,6 +94,7 @@ def make_app(settings={}):
             (r"/api/v1/crop", CropHandler),
             (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
             (r"/api/v1/devices/([^/]+)/screenrecord/([^/]+)", DeviceScreenrecordHandler, {"path": uploadPath}),
+            (r"/api/v1/devices/([^/]+)/floatwindow/([^/]+)", FloatWindowHandler),
             (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
             # (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
             (r"/api/v1/devices/([^/]+)/widget", DeviceWidgetListHandler),
@@ -189,7 +193,7 @@ def run_web(debug=False, port=17310, open_browser=False, force_quit=False):
     tornado.ioloop.IOLoop.instance().start()
     # tornado.ioloop.IOLoop.instance().add_callback(consume_queue)
 
-    stop_device()
+    stop_device(uploadPath)
     
     if os.path.exists(PID_FILEPATH):
         os.unlink(PID_FILEPATH)

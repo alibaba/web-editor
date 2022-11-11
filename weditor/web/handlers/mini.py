@@ -15,15 +15,14 @@ class ClientHandler(object):
     conn = None
     handlers = None
     strs = None
-    bins = None
+    d = None
     
     def __init__(self, id: str, name: str):
         self.handlers = []
         self.strs = {}
-        self.bins = []
         self.id = id + "/" + name
-        d = get_device(id)
-        ws_addr = d.device.address.replace("http://", "ws://") # yapf: disable
+        self.d = get_device(id)
+        ws_addr = self.d.device.address.replace("http://", "ws://") # yapf: disable
         url = ws_addr + "/" + name
         
         websocket_connect(url, callback=self.on_open, on_message_callback=self.on_message, connect_timeout=10)
@@ -47,10 +46,6 @@ class ClientHandler(object):
             if isinstance(message, str) and message.__contains__(" "):
                 key, val = message.split(" ", maxsplit=1)
                 self.strs[key] = val
-            if isinstance(message, bytes):
-                self.bins.append(message)
-                while len(self.bins) > 10:
-                    del self.bins[0]
     
     def on_close(self):
         logger.info("client close")
@@ -64,8 +59,6 @@ class ClientHandler(object):
     def add_handler(self, handler: BaseHandler):
         for key, val in self.strs.items():
             handler.write_message(key + " " + val)
-        for msg in self.bins:
-            handler.write_message(msg, True)
         self.handlers.append(handler)
     
     def del_handler(self, handler: BaseHandler):
