@@ -223,6 +223,20 @@ class DeviceScreenshotHandler(BaseHandler):
             self.set_status(500)  # Gone
             self.write({"description": traceback.format_exc()})
 
+class DeviceScreenrecordHandler(BaseHandler):
+    root = None
+    def initialize(self, path: str) -> None:
+        self.root = path
+    def get(self, serial, action):
+        d = get_device(serial)
+        if action == "start":
+            self.write(d.start_screenrecord(self.root))
+        elif action == "stop":
+            self.write(d.stop_screenrecord(self.root))
+        else:
+            self.set_status(404)
+            self.write("action " + action + " invalid")
+
 class DeviceSizeHandler(BaseHandler):
     def post(self):
         serial = self.get_argument("serial")

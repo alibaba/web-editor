@@ -2,6 +2,8 @@
 #
 
 import abc
+import os
+import time
 
 import uiautomator2 as u2
 import wda
@@ -27,6 +29,38 @@ class DeviceMeta(metaclass=abc.ABCMeta):
 class _AndroidDevice(DeviceMeta):
     def __init__(self, device_url):
         self._d = u2.connect(device_url)
+
+    def start_screenrecord(self, path):
+        r = self._d.http.post("/screenrecord")
+        code = 0
+        if r.status_code == 200:
+            t = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
+            stdout = os.path.join(path, "logcat-" + t + ".log")
+            stderr = os.path.join(path, "logcat-" + t + ".err")
+            code = os.system("daemon -rU --name logcat --stdout " + stdout + " --stderr " + stderr + " -- adb logcat")
+        return {"status": r.status_code == 200, "message": str(r.text).strip(), "code": code}
+
+    def stop_screenrecord(self, path):
+        r = self._d.http.put("/screenrecord")
+        if r.status_code == 200:
+            videos = r.json()["videos"]
+            if len(videos) > 0:
+                files = []
+                cmdargs = ["rm", "-f"]
+                t = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
+                for f in videos:
+                    name = "screenrecord-" + t + "-" + os.path.basename(f)
+                    self._d.pull(f, os.path.join(path, name))
+                    cmdargs.append(f)
+                    files.append(name)
+                r = self._d.shell(cmdargs)
+                logcat = os.system("daemon --stop --name logcat")
+                dmesg = os.system("adb shell dmesg > " + os.path.join(path, "dmesg-" + t + ".log"))
+                return {"status": True, "files": files, "rmCode": r.exit_code, "output": r.output, "logcat": logcat, "dmesg": dmesg}
+            else:
+                return {"status": True, "files": [], "exitCode": 0, "output": ""}
+        else:
+            return {"status": False, "message": str(r.text).strip()}
 
     def screenshot(self):
         return self._d.screenshot()

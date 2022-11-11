@@ -26,7 +26,7 @@ from .web.handlers.page import (
     BaseHandler, DeviceConnectHandler,
     DeviceHierarchyHandler, DeviceHierarchyHandlerV2, DeviceScreenshotHandler,
     DeviceWidgetListHandler, MainHandler, VersionHandler, WidgetPreviewHandler,
-    DeviceSizeHandler, DeviceTouchHandler, DevicePressHandler, ListHandler)
+    DeviceSizeHandler, DeviceTouchHandler, DevicePressHandler, ListHandler, DeviceScreenrecordHandler)
 from .web.handlers.proxy import StaticProxyHandler
 from .web.handlers.shell import PythonShellHandler
 from .web.utils import current_ip, tostr
@@ -74,11 +74,15 @@ class CropHandler(BaseHandler):
 
 
 def make_app(settings={}):
+    if os.name == "nt":
+        uploadPath = "D:\\code\\uploads"
+    else:
+        uploadPath = "/home/pi/uploads"
     application = tornado.web.Application(
         [
             (r"/", MainHandler),
-            (r"/downloads/", ListHandler, {"path": "/home/pi/uploads"}),
-            (r"/downloads/(.+)", tornado.web.StaticFileHandler, {"path": "/home/pi/uploads"}),
+            (r"/downloads/", ListHandler, {"path": uploadPath}),
+            (r"/downloads/(.+)", tornado.web.StaticFileHandler, {"path": uploadPath}),
             (r"/api/v1/version", VersionHandler),
             (r"/api/v1/connect", DeviceConnectHandler),
             (r"/api/v1/size", DeviceSizeHandler),
@@ -86,6 +90,7 @@ def make_app(settings={}):
             (r"/api/v1/press", DevicePressHandler),
             (r"/api/v1/crop", CropHandler),
             (r"/api/v1/devices/([^/]+)/screenshot", DeviceScreenshotHandler),
+            (r"/api/v1/devices/([^/]+)/screenrecord/([^/]+)", DeviceScreenrecordHandler, {"path": uploadPath}),
             (r"/api/v1/devices/([^/]+)/hierarchy", DeviceHierarchyHandler),
             # (r"/api/v1/devices/([^/]+)/exec", DeviceCodeDebugHandler),
             (r"/api/v1/devices/([^/]+)/widget", DeviceWidgetListHandler),
