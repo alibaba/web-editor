@@ -37,8 +37,11 @@ class _AndroidDevice(DeviceMeta):
             t = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
             stdout = os.path.join(path, "logcat-" + t + ".log")
             stderr = os.path.join(path, "logcat-" + t + ".err")
-            code = os.system("daemon -rU --name logcat --stdout " + stdout + " --stderr " + stderr + " -- adb logcat")
-        return {"status": r.status_code == 200, "message": str(r.text).strip(), "code": code}
+            logcat = os.system("daemon -rU --name logcat --stdout " + stdout + " --stderr " + stderr + " -- adb logcat")
+            stdout = os.path.join(path, "dmesg-" + t + ".log")
+            stderr = os.path.join(path, "dmesg-" + t + ".err")
+            dmesg = os.system("daemon -rU --name dmesg --stdout " + stdout + " --stderr " + stderr + " -- adb shell 'echo \"while dmesg -c;do echo ;done\" | su'")
+        return {"status": r.status_code == 200, "message": str(r.text).strip(), "logcat": logcat, "dmesg": dmesg}
 
     def stop_screenrecord(self, path):
         r = self._d.http.put("/screenrecord")
@@ -55,7 +58,7 @@ class _AndroidDevice(DeviceMeta):
                     files.append(name)
                 r = self._d.shell(cmdargs)
                 logcat = os.system("daemon --stop --name logcat")
-                dmesg = os.system("adb shell dmesg > " + os.path.join(path, "dmesg-" + t + ".log"))
+                dmesg = os.system("daemon --stop --name dmesg")
                 return {"status": True, "files": files, "rmCode": r.exit_code, "output": r.output, "logcat": logcat, "dmesg": dmesg}
             else:
                 return {"status": True, "files": [], "exitCode": 0, "output": ""}

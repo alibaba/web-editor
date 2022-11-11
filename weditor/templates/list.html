@@ -7,6 +7,15 @@
   <meta name="Keywords" content="">
   <meta name="Description" content="">
   <title>下载列表</title>
+  <style type="text/css">
+  table,th,td{border-spacing:0;border:0 none;}
+  table{border-top:1px #999 solid;border-left:1px #999 solid;}
+  th,td{padding: 5px;border-right:1px #999 solid;border-bottom:1px #999 solid;}
+  th{border-bottom-width: 2px;}
+  td.r{text-align: right;}
+  tr:nth-child(odd){background:#eee;}
+  tr:first-child{background:#ccc;}
+  </style>
  </head>
  <body>
   <table>
@@ -18,7 +27,7 @@
 	{% for f in files %}
 	<tr>
 		<td><a href="{{f["name"]}}">{{f["name"]}}</a></td>
-		<td>{{f["size"]}}</td>
+		<td title="{{f["size"]}}" class="r">{{f["fsize"]}}</td>
 		<td>{{f["time"]}}</td>
 	</tr>
 	{% end %}

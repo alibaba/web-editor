@@ -5,6 +5,7 @@ import base64
 import io
 import json
 import os
+import math
 import traceback
 import aiofiles
 import time
@@ -272,6 +273,19 @@ class DevicePressHandler(BaseHandler):
         ret = d.device.keyevent(key)
         self.write({"ret": ret})
 
+def formatsize(size: int):
+    if size < 1024:
+        return str(size)
+    
+    logger.info("size = %d", size)
+    i = math.floor(math.log(size, 1024))
+    logger.info("i = %d", i)
+    unit = "BKMGT"
+    return "{:.3f}".format(size / math.pow(1024, i)) + unit[i]
+
+def filetime(item):
+    return item["time"]
+
 class ListHandler(BaseHandler):
     root = None
     def initialize(self, path: str) -> None:
@@ -281,5 +295,6 @@ class ListHandler(BaseHandler):
         for name in os.listdir(self.root):
             st = os.stat(os.path.join(self.root, name))
             t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(st.st_mtime))
-            files.append({"name": name, "size": st.st_size, "time": t})
+            files.append({"name": name, "size": st.st_size, "fsize": formatsize(st.st_size), "time": t})
+        files.sort(key = filetime, reverse = True)
         self.render("list.html", files=files)
