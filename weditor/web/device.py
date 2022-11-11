@@ -60,19 +60,20 @@ class _AndroidDevice(DeviceMeta):
     def stop_screenrecord(self, path):
         if self.screenrecordTimeout is not None:
             self.screenrecordTimeout.stop()
+            self.screenrecordTimeout = None
         
         r = self._d.http.put("/screenrecord")
         if r.status_code == 200:
-            self.isScreenRecord = False
+            if self.isScreenRecord:
+                t = self.screenRecordTime
+                self.isScreenRecord = False
+            else:
+                t = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
+            
             videos = r.json()["videos"]
             if len(videos) > 0:
                 files = []
                 cmdargs = ["rm", "-f"]
-                
-                if self.isScreenRecord:
-                    t = self.screenRecordTime
-                else:
-                    t = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
                 
                 for f in videos:
                     name = "screenrecord-" + t + "-" + os.path.basename(f)
