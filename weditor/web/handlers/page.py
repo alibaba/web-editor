@@ -7,7 +7,6 @@ import json
 import os
 import math
 import traceback
-import aiofiles
 import time
 import tornado
 from logzero import logger
