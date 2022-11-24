@@ -76,17 +76,15 @@ class PosixAsyncSubprocess(Subprocess):
 
 class PythonShellHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
-        pass
-        # self._tmpd = tempfile.TemporaryDirectory(suffix='-weditor')
-        # atexit.register(self._tmpd.cleanup)
+        self._tmpd = tempfile.TemporaryDirectory(suffix='-weditor')
+        atexit.register(self._tmpd.cleanup)
 
     def check_origin(self, origin: str) -> bool:
         return True
 
     def on_close(self):
         logger.warning("websocket closed, cleanup")
-        # self._tmpd.cleanup()
-        # atexit.unregister(self._tmpd.cleanup)
+        atexit.unregister(self._tmpd.cleanup)
         IOLoop.current().add_callback(self.kill_process)
 
     @property
@@ -106,7 +104,7 @@ class PythonShellHandler(tornado.websocket.WebSocketHandler):
             [sys.executable, "-u",
              os.path.join(ROOT_DIR, "../ipyshell-console.py")],
             env=env,
-            # cwd=self._tmpdir,
+            cwd=self._tmpdir,
             stdin=Subprocess.STREAM,
             stdout=Subprocess.STREAM,
             stderr=subprocess.STDOUT) # yapf: disable
@@ -120,6 +118,7 @@ class PythonShellHandler(tornado.websocket.WebSocketHandler):
         self.__process.proc.kill()
         ret = await self.__process.wait_for_exit(raise_error=False)
         logger.info("process quited with code %d", ret)
+        self._tmpd.cleanup()
 
     async def _readline_decoded(self) -> str:
         line = await self.__process.readline()
