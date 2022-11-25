@@ -20,7 +20,7 @@ from logzero import logger
 from tornado.log import enable_pretty_logging
 from weditor.web.device import stop_device
 
-from weditor.web.handlers.mini import MiniCapHandler, MiniTouchHandler
+from weditor.web.handlers.mini import MiniCapHandler, MiniTouchHandler, MiniSoundHandler
 
 from .web.handlers.page import (
     BaseHandler, DeviceConnectHandler,
@@ -114,6 +114,7 @@ def make_app(settings={}):
             (r"/ws/v1/python", PythonShellHandler),
             (r"/ws/v1/minicap", MiniCapHandler),
             (r"/ws/v1/minitouch", MiniTouchHandler),
+            (r"/ws/v1/minisound", MiniSoundHandler),
             (r"/quit", QuitHandler),
         ],
         **settings)

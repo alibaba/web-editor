@@ -4,6 +4,10 @@ from asyncio import Future
 from logzero import logger
 from weditor.web.device import get_device
 from tornado.websocket import websocket_connect, WebSocketHandler
+import pyaudio, wave
+from io import BytesIO
+from tornado.ioloop import PeriodicCallback
+import queue
 
 cached_devices = {}
 
@@ -112,3 +116,78 @@ class MiniTouchHandler(BaseHandler):
         logger.info("MiniTouch closed")
         self.d.del_handler(self)
         self.d = None
+
+RATE = 16000
+CHANNELS = 2
+SECONDS = 0.2
+CHUNK_LENGTH = int(RATE * SECONDS * 2 * CHANNELS)
+FORMAT = pyaudio.paInt16
+
+class Sound(object):
+    audio: pyaudio.PyAudio = None
+    stream: pyaudio.Stream = None
+    handlers: list[BaseHandler] = None
+    
+    def __init__(self) -> None:
+        self.handlers = []
+    
+    def open(self):
+        if self.audio is None or self.stream is None:
+            self.audio = pyaudio.PyAudio()
+            self.stream = self.audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK_LENGTH, stream_callback=self.callback)
+            self.stream.start_stream()
+    
+    def callback(self, in_data, frame_count, time_info, status):
+        n = 0
+        for h in self.handlers:
+            h.q.put(in_data)
+            n = n + 1
+        
+        if n > 0:
+            logger.info("sound handlers %d", n)
+        
+        return b"", pyaudio.paContinue
+    
+    def add_handler(self, handler: BaseHandler):
+        logger.info("sound add_handler")
+        self.handlers.append(handler)
+    
+    def del_handler(self, handler: BaseHandler):
+        logger.info("sound del_handler")
+        self.handlers.remove(handler)
+
+    def close(self):
+        if len(self.handlers) == 0:
+            if self.stream is not None:
+                self.stream.stop_stream()
+                self.stream = None
+            if self.audio is not None:
+                self.audio.terminate()
+                self.audio = None
+
+sound: Sound = Sound()
+
+class MiniSoundHandler(BaseHandler):
+    q: queue.Queue = None
+    task: PeriodicCallback = None
+    
+    def open(self):
+        self.q = queue.LifoQueue()
+        sound.open()
+        sound.add_handler(self)
+
+        self.task = PeriodicCallback(self.do_task, SECONDS * 1000)
+        self.task.start()
+        
+    def do_task(self):
+        while not self.q.empty():
+            self.write_message(self.q.get(), True)
+
+    def on_message(self, message):
+        pass
+
+    def on_close(self):
+        self.task.stop()
+        sound.del_handler(self)
+        sound.close()
+

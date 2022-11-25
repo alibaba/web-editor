@@ -11,7 +11,7 @@ from logzero import logger
 from PIL import Image
 
 from . import uidumplib
-from tornado.ioloop import PeriodicCallback, IOLoop
+from tornado.ioloop import PeriodicCallback
 
 class DeviceMeta(metaclass=abc.ABCMeta):
     @abc.abstractmethod
