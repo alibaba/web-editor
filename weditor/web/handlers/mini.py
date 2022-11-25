@@ -137,14 +137,8 @@ class Sound(object):
             self.stream.start_stream()
     
     def callback(self, in_data, frame_count, time_info, status):
-        t = time.time()
-        n = 0
         for h in self.handlers:
             h.loop.call_soon_threadsafe(h.write_message, in_data, True)
-            n = n + 1
-        
-        if n > 0:
-            logger.info("sound %d handlers, time %fms, %d", n, (time.time() - t) * 1000, threading.currentThread().native_id)
         
         return b"", pyaudio.paContinue
     
