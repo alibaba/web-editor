@@ -1,13 +1,12 @@
 # coding: utf-8
 #
-from asyncio import Future
+from asyncio import Future, get_event_loop
 from logzero import logger
 from weditor.web.device import get_device
 from tornado.websocket import websocket_connect, WebSocketHandler
-import pyaudio, wave
-from io import BytesIO
-from tornado.ioloop import PeriodicCallback
-import queue
+import pyaudio
+import time
+import threading
 
 cached_devices = {}
 
@@ -119,8 +118,8 @@ class MiniTouchHandler(BaseHandler):
 
 RATE = 16000
 CHANNELS = 2
-SECONDS = 0.2
-CHUNK_LENGTH = int(RATE * SECONDS * 2 * CHANNELS)
+SECONDS = 0.1
+CHUNK_LENGTH = int(RATE * SECONDS)
 FORMAT = pyaudio.paInt16
 
 class Sound(object):
@@ -138,13 +137,14 @@ class Sound(object):
             self.stream.start_stream()
     
     def callback(self, in_data, frame_count, time_info, status):
+        t = time.time()
         n = 0
         for h in self.handlers:
-            h.q.put(in_data)
+            h.loop.call_soon_threadsafe(h.write_message, in_data, True)
             n = n + 1
         
         if n > 0:
-            logger.info("sound handlers %d", n)
+            logger.info("sound %d handlers, time %fms, %d", n, (time.time() - t) * 1000, threading.currentThread().native_id)
         
         return b"", pyaudio.paContinue
     
@@ -166,28 +166,19 @@ class Sound(object):
                 self.audio = None
 
 sound: Sound = Sound()
+sound.open()
+# sound.close()
 
 class MiniSoundHandler(BaseHandler):
-    q: queue.Queue = None
-    task: PeriodicCallback = None
+    loop = None
     
     def open(self):
-        self.q = queue.LifoQueue()
-        sound.open()
+        self.loop = get_event_loop()
         sound.add_handler(self)
-
-        self.task = PeriodicCallback(self.do_task, SECONDS * 1000)
-        self.task.start()
-        
-    def do_task(self):
-        while not self.q.empty():
-            self.write_message(self.q.get(), True)
 
     def on_message(self, message):
         pass
 
     def on_close(self):
-        self.task.stop()
         sound.del_handler(self)
-        sound.close()
 
