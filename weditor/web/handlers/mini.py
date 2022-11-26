@@ -45,7 +45,10 @@ class ClientHandler(object):
         else:
             # logger.debug("client message: %s", message)
             for handler in self.handlers:
-                handler.write_message(message, isinstance(message, bytes))
+                try:
+                    handler.write_message(message, isinstance(message, bytes))
+                except:
+                    pass
             if isinstance(message, str) and message.__contains__(" "):
                 key, val = message.split(" ", maxsplit=1)
                 self.strs[key] = val
