@@ -178,8 +178,6 @@ def run_web(debug=False, port=17310, open_browser=False, force_quit=False):
         'static_path': os.path.join(__dir__, 'static'),
         'template_path': os.path.join(__dir__, 'templates'),
         'debug': debug,
-        'websocket_ping_interval': 60,
-        'websocket_ping_timeout': 3,
     })
     print('listening on http://%s:%d' % (current_ip(), port))
     if debug:
