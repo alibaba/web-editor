@@ -92,7 +92,7 @@ class MiniCapHandler(BaseHandler):
         logger.info("MiniCap opened: %s", self.id)
 
     def on_message(self, message):
-        logger.info("MiniCap message: %s", message)
+        # logger.info("MiniCap message: %s", message)
         self.d.write_message(message)
 
     def on_close(self):
@@ -111,7 +111,7 @@ class MiniTouchHandler(BaseHandler):
         logger.info("MiniTouch opened: %s", id)
 
     def on_message(self, message):
-        logger.info("MiniTouch message: %s", message)
+        # logger.info("MiniTouch message: %s", message)
         self.d.write_message(message)
 
     def on_close(self):
