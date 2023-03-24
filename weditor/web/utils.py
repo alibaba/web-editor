@@ -19,13 +19,13 @@ def tostr(s, encoding='utf-8'):
 def read_file_content(filename, default=''):
     if not os.path.isfile(filename):
         return default
-    with open(filename, 'rb') as f:
+    with open(filename, 'rb', encoding='utf-8') as f:
         return f.read()
 
 
 def sha_file(path):
     sha = hashlib.sha1()
-    with open(path, 'rb') as f:
+    with open(path, 'rb', encoding='utf-8') as f:
         while True:
             data = f.read(65536)
             if not data:
@@ -35,7 +35,7 @@ def sha_file(path):
 
 
 def write_file_content(filename, content):
-    with open(filename, 'w') as f:
+    with open(filename, 'w', encoding='utf-8') as f:
         f.write(content.encode('utf-8'))
 
 
