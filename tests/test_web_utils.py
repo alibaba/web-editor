@@ -28,7 +28,6 @@ def test_sha_file(hello_path: pathlib.Path):
     assert utils.sha_file(hello_path) == "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d"
 
 
-@pytest.mark.skip(reason="not passed")
 def test_write_file_content(hello_path: pathlib.Path):
     utils.write_file_content(hello_path, 'world')
     assert hello_path.read_text() == "world"
