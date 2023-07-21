@@ -24,7 +24,7 @@ class DeviceMeta(metaclass=abc.ABCMeta):
         pass
 
 
-class _AndroidDevice(DeviceMeta):
+class _AndroidUiautomatorDevice(DeviceMeta):
     def __init__(self, device_url):
         d = u2.connect(device_url)
         # 登陆界面无法截图，就先返回空图片
@@ -40,6 +40,8 @@ class _AndroidDevice(DeviceMeta):
     def dump_hierarchy2(self):
         current = self._d.app_current()
         page_xml = self._d.dump_hierarchy(pretty=True)
+        # 临时增加测试
+        # import adbutils
         page_json = uidumplib.android_hierarchy_to_json(
             page_xml.encode('utf-8'))
         return {
@@ -98,7 +100,7 @@ def connect_device(platform, device_url):
     """
     device_id = platform + ":" + device_url
     if platform == 'android':
-        d = _AndroidDevice(device_url)
+        d = _AndroidUiautomatorDevice(device_url)
     elif platform == 'ios':
         d = _AppleDevice(device_url)
     else:
