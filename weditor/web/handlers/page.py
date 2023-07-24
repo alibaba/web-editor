@@ -14,7 +14,7 @@ from tornado.escape import json_decode
 
 from ..device import connect_device, get_device
 from ..version import __version__
-
+from ..proto import PlatformEnum
 
 pathjoin = os.path.join
 
@@ -53,12 +53,15 @@ class MainHandler(BaseHandler):
 
 class DeviceConnectHandler(BaseHandler):
     def post(self):
-        platform = self.get_argument("platform").lower()
+        _platform = self.get_argument("platform")
         device_url = self.get_argument("deviceUrl")
 
+        platform = PlatformEnum(_platform)
+        del _platform
         try:
             id = connect_device(platform, device_url)
         except RuntimeError as e:
+            logger.exception("connect failed")
             self.set_status(500)
             self.write({
                 "success": False,

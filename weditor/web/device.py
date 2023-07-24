@@ -3,12 +3,14 @@
 
 import abc
 
+import adbutils
 import uiautomator2 as u2
 import wda
 from logzero import logger
 from PIL import Image
 
 from . import uidumplib
+from .proto import PlatformEnum
 
 
 class DeviceMeta(metaclass=abc.ABCMeta):
@@ -24,6 +26,36 @@ class DeviceMeta(metaclass=abc.ABCMeta):
         pass
 
 
+class _AndroidADB(DeviceMeta):
+    def __init__(self, device_url: str):
+        if not device_url:
+            self._d = adbutils.device()
+        else:
+            self._d = adbutils.device(device_url)
+    
+    def screenshot(self) -> Image:
+        return self._d.screenshot()
+    
+    def dump_hierarchy(self) -> str:
+        return self._d.dump_hierarchy()
+    
+    def dump_hierarchy2(self):
+        current = self._d.app_current()
+        page_xml = self._d.dump_hierarchy()
+        page_json = uidumplib.android_hierarchy_to_json(
+            page_xml.encode('utf-8'))
+        return {
+            "xmlHierarchy": page_xml,
+            "jsonHierarchy": page_json,
+            "activity": current.activity,
+            "packageName": current.package,
+            "windowSize": self._d.window_size(),
+        }
+
+    @property
+    def device(self):
+        return self._d
+        
 class _AndroidUiautomatorDevice(DeviceMeta):
     def __init__(self, device_url):
         d = u2.connect(device_url)
@@ -93,15 +125,17 @@ class _AppleDevice(DeviceMeta):
 cached_devices = {}
 
 
-def connect_device(platform, device_url):
+def connect_device(platform: PlatformEnum, device_url: str):
     """
     Returns:
         deviceId (string)
     """
     device_id = platform + ":" + device_url
-    if platform == 'android':
+    if platform == PlatformEnum.AndroidUIAutomator2:
         d = _AndroidUiautomatorDevice(device_url)
-    elif platform == 'ios':
+    elif platform == PlatformEnum.AndroidADB:
+        d = _AndroidADB(device_url)
+    elif platform == PlatformEnum.IOS:
         d = _AppleDevice(device_url)
     else:
         raise ValueError("Unknown platform", platform)
