@@ -145,7 +145,7 @@ def get_ios_hierarchy(d, scale):
             rect = node['rect']
             nrect = {}
             for k, v in rect.items():
-                nrect[k] = v * scale
+                nrect[k] = v * scale if isinstance(v, int) else "null"
             node['rect'] = nrect
 
         for child in node.get('children', []):
