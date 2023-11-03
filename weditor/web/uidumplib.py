@@ -122,7 +122,7 @@ def android_hierarchy_to_json(page_xml: bytes):
             return
         json_node = _parse_uiautomator_node(node)
         json_node['_id'] = str(uuid.uuid4())
-        if node.childNodes:
+        if json_node.get("_type") != "android.webkit.WebView" and node.childNodes:
             children = []
             for n in node.childNodes:
                 child = travel(n)
