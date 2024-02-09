@@ -775,26 +775,86 @@ window.vm = new Vue({
         return this.screenRefresh().then(this.dumpHierarchy)
       }
     },
+    setHierarchy: function (ret) {
+      localStorage.setItem("xmlHierarchy", ret.xmlHierarchy);
+      localStorage.setItem('jsonHierarchy', JSON.stringify(ret.jsonHierarchy));
+      localStorage.setItem("activity", ret.activity);
+      localStorage.setItem("packageName", ret.packageName);
+      localStorage.setItem("windowSize", ret.windowSize);
+      this.activity = ret.activity; // only for android
+      this.packageName = ret.packageName;
+      this.drawAllNodeFromSource(ret.jsonHierarchy);
+      this.nodeSelected = null;
+    },
     dumpHierarchy: function () { // v2
       this.dumping = true
       return $.getJSON(LOCAL_URL + 'api/v2/devices/' + encodeURIComponent(this.deviceId || '-') + '/hierarchy')
         .fail((ret) => {
           this.showAjaxError(ret);
         })
-        .then((ret) => {
-          localStorage.setItem("xmlHierarchy", ret.xmlHierarchy);
-          localStorage.setItem('jsonHierarchy', JSON.stringify(ret.jsonHierarchy));
-          localStorage.setItem("activity", ret.activity);
-          localStorage.setItem("packageName", ret.packageName);
-          localStorage.setItem("windowSize", ret.windowSize);
-          this.activity = ret.activity; // only for android
-          this.packageName = ret.packageName;
-          this.drawAllNodeFromSource(ret.jsonHierarchy);
-          this.nodeSelected = null;
-        })
+        .then(this.setHierarchy)
         .always(() => {
           this.dumping = false
         })
+    },
+    loadHierarchy: function (files) {
+      if (!files || files.length == 0) {
+        return;
+      }
+      const loadSource = () => {
+        var source = Array.from(files).find(function (file) {
+          return file.type.indexOf('image/') === -1
+        })
+        this.loadHierarchySource(source);
+        this.dumping = false
+      }
+
+      this.dumping = true
+      var screenshot = Array.from(files).find(function (file) {
+        return file.type.indexOf('image/') > -1
+      })
+      // screenshot or source can be uploaded separately
+      // if (!screenshot) {
+      //   alert('screenshot file is required')
+      //   return;
+      // }
+
+      if (screenshot) {
+        this.loadScreenshot(screenshot).then(loadSource);
+      } else {
+        loadSource()
+      }
+
+      // if (!screenshot && !source) {
+      //   alert('screenshot or source file is required')
+      //   return;
+      // }
+    },
+    loadScreenshot: function (screenshot) {
+      if (!screenshot) {
+        return;
+      }
+      console.debug('screenshot', screenshot)
+      return this.drawBlobImageToScreen(screenshot);
+    },
+
+    loadHierarchySource: function (source) {
+      if (!source) {
+        return;
+      }
+
+      var screenshotWidth = this.canvas.bg.width || 0;
+
+      var reader = new FileReader();
+      reader.readAsText(source, "UTF-8");
+      reader.onload = (evt) => {
+        var ret = dumplib.parseIosJson(evt.target.result, screenshotWidth)
+        this.setHierarchy(ret)
+      }
+      reader.onerror = function (evt) {
+        console.warn('hierarchy load error', evt)
+        alert('hierarchy load error')
+      }
     },
     screenRefresh: function () {
       return $.getJSON(LOCAL_URL + 'api/v1/devices/' + encodeURIComponent(this.deviceId || '-') + '/screenshot')
@@ -821,7 +881,6 @@ window.vm = new Vue({
       img.onload = function () {
         fgcanvas.width = bgcanvas.width = img.width
         fgcanvas.height = bgcanvas.height = img.height
-
 
         ctx.drawImage(img, 0, 0, img.width, img.height);
         self.resizeScreen(img);

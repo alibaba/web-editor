@@ -1,9 +1,9 @@
-// Copies a string to the clipboard. Must be called from within an 
+// Copies a string to the clipboard. Must be called from within an
 // event handler such as click. May return false if it failed, but
-// this is not always possible. Browser support for Chrome 43+, 
+// this is not always possible. Browser support for Chrome 43+,
 // Firefox 42+, Safari 10+, Edge and IE 10+.
 // IE: The clipboard feature may be disabled by an administrator. By
-// default a prompt is shown the first time the clipboard is 
+// default a prompt is shown the first time the clipboard is
 // used (per session).
 function copyToClipboard(text) {
   if (window.clipboardData && window.clipboardData.setData) {
@@ -72,4 +72,41 @@ function b64toBlob(b64Data, contentType, sliceSize) {
   return new Blob(byteArrays, {
     type: contentType
   });
+}
+
+var dumplib = {
+  parseIosJson: function(json, screenshotWidth) {
+    var node = JSON.parse(json);
+    // get 414, 736 from {{0, 0}, {414, 736}}
+    var windowSize = /\{\{(.+)\}, \{(.+)\}\}/.exec(node.frame)[2].split(',').map(v => parseInt(v, 10))
+    var scale = screenshotWidth ? screenshotWidth / windowSize[0] : 1
+
+    function travel(node) {
+      node['_id'] = node['_id'] || uuidv4();
+      node['_type'] = node['type'] || null;
+      if (node['rect']) {
+        let rect = node['rect'];
+        let nrect = {};
+        for (let k in rect) {
+          nrect[k] = rect[k] * scale;
+        }
+        node['rect'] = nrect;
+      }
+
+      if (node['children']) {
+        node['children'].forEach(child => {
+          travel(child);
+        });
+      }
+      return node;
+    }
+
+    return {
+      jsonHierarchy: travel(node),
+      windowSize
+    }
+  },
+  parseAndroidJson: function(json) {
+
+  }
 }
