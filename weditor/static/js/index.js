@@ -945,7 +945,7 @@ window.vm = new Vue({
       const m = this.deviceId.match(/^([^:]+):(.*)/)
       const deviceUrl = m[2]
       let codeLines;
-      if (m[1] == "ios") {
+      if (m[1].search(/ios/i) != -1) {
         codeLines = [
           "print('Set environment for iOS device\\nInit c = d = wda.Client()')",
           "import os",
@@ -953,7 +953,7 @@ window.vm = new Vue({
           `os.environ['DEVICE_URL'] = "${deviceUrl}"`,
           `c = d = wda.Client()`,
         ]
-      } else if (m[1] == "android") {
+      } else if (m[1].search(/android/i) != -1) {
         codeLines = [
           "print('Set environment and prepare d = u2.connect()')",
           "import os",
