@@ -1,4 +1,6 @@
-# WEditor
+# Because it is difficult to reconstruct this project, I wrote a new one. Visit <https://appinspector.devsleep.com/> and have a try
+
+## WEditor
 [![image](https://img.shields.io/pypi/v/weditor.svg?style=flat-square)](https://pypi.python.org/pypi/weditor)
 [![image](https://img.shields.io/github/stars/alibaba/web-editor.svg?style=social&label=Star&style=flat-square)](https://github.com/alibaba/web-editor)
 [![image](https://travis-ci.org/alibaba/web-editor.svg?branch=master)](https://travis-ci.org/alibaba/web-editor)
