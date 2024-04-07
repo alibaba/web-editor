@@ -67,6 +67,7 @@ __parsers = {
     'resourceId': convstr,
     'package': convstr,
     'checkable': str2bool,
+    'checked': str2bool,
     'scrollable': str2bool,
     'focused': str2bool,
     'clickable': str2bool,
