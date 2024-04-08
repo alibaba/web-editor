@@ -62,6 +62,12 @@
             <el-switch v-model="liveScreen" active-text="实时" inactive-text="静态">
             </el-switch>
           </template>
+          <input type="file" id="load_hierarchy" name="load_hierarchy" accept="*" @change="(e) => {loadHierarchy(e.target.files)}" multiple style="display: none;"/>
+          <el-tooltip :open-delay="500" content="Load screenshot (or/and) source json" placement="bottom">
+            <label class="btn btn-default" for="load_hierarchy" v-if="platform == 'iOS'">
+              <i class="fa fa-upload" :class='{"fa-spin": dumping}'></i> Load Hierarchy
+            </label>
+          </el-tooltip>
         </form>
         <ul class="nav navbar-nav navbar-right">
           <!-- <li><a href="#">Link</a></li> -->
@@ -292,6 +298,7 @@
   </div>
 </body>
 
+<script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuidv4.min.js"></script>
 <script src="/cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
 <script src="/cdn.jsdelivr.net/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 <script src="/cdn.jsdelivr.net/bootstrap.select/1.12.2/js/bootstrap-select.min.js"></script>
