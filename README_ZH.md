@@ -1,9 +1,12 @@
+# 该项目后面就不在更新了，请使用新的重构版 <https://uiauto.dev>
+
 # WEditor
 [![image](https://img.shields.io/pypi/v/weditor.svg?style=flat-square)](https://pypi.python.org/pypi/weditor)
 [![image](https://img.shields.io/github/stars/alibaba/web-editor.svg?style=social&label=Star&style=flat-square)](https://github.com/alibaba/web-editor)
 [![image](https://travis-ci.org/alibaba/web-editor.svg?branch=master)](https://travis-ci.org/alibaba/web-editor)
 
 [English README.md](README.md)
+
 
 编辑器能够提供辅助编写脚本，查看组件信息，调试代码等功能。
 

@@ -1,4 +1,4 @@
-# Because it is difficult to reconstruct this project, I wrote a new one. Visit <https://appinspector.devsleep.com/> and have a try
+# Because it is difficult to reconstruct this project, I wrote a new one. Visit <https://uiauto.dev> and have a try
 
 ## WEditor
 [![image](https://img.shields.io/pypi/v/weditor.svg?style=flat-square)](https://pypi.python.org/pypi/weditor)
