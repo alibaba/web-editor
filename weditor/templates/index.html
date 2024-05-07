@@ -58,10 +58,13 @@
           <button :disabled="loading || connecting" class="btn btn-default" v-on:click="dumpHierarchyWithScreen()">
             <i class="fa fa-refresh" :class='{"fa-spin": dumping}'></i> Dump Hierarchy
           </button>
-          <template v-if="platform == 'Android'">
+          <template v-if="platform == 'Beta'">
             <el-switch v-model="liveScreen" active-text="实时" inactive-text="静态">
             </el-switch>
           </template>
+          <div class="form-group">
+            <span style="color: red">因原有的weditor修改难度过大，所以我重新写了一个新工具<a target="_blank" href="https://uiauto.dev">https://uiauto.dev</a>，欢迎试用</span>
+          </div>
         </form>
         <ul class="nav navbar-nav navbar-right">
           <!-- <li><a href="#">Link</a></li> -->

@@ -80,8 +80,8 @@ class DeviceConnectHandler(BaseHandler):
                 'success': True,
             }
             if platform == "android":
-                ws_addr = get_device(id).device.address.replace("http://", "ws://") # yapf: disable
-                ret['screenWebSocketUrl'] = ws_addr + "/minicap"
+                # ws_addr = get_device(id).device.address.replace("http://", "ws://") # yapf: disable
+                ret['screenWebSocketUrl'] = None #ws_addr + "/minicap"
             self.write(ret)
 
 
